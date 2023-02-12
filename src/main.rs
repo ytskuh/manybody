@@ -1,16 +1,19 @@
-use kd_tree::KdTree;
-use rand;
-
+use std::fmt;
+use typenum::Unsigned;
 extern crate nalgebra as na;
+use kd_tree::{KdPoint, KdTree};
 
-const DIM: usize = 1;
+type DimType = typenum::U2;
+const DIM: usize = DimType::U8 as usize;
 
-type Particle = na::SVector<f64, DIM>;
+type VectorD = na::SVector<f64, DIM>;
+struct Particle(VectorD);
+struct Manybody<T: KdPoint>(KdTree<T>);
 pub trait Interaction {
     fn v_field(&self) -> f64;
     fn w_field(&self, other: &Self) -> f64;
-    fn dv(&self) -> Self;
-    fn dw(&self, other: &Self) -> Self;
+    fn dv(&self) -> VectorD;
+    fn dw(&self, other: &Self) -> VectorD;
 }
 fn main() {
     // let particle_num = 128;
@@ -23,27 +26,52 @@ fn main() {
     // for step in 0..step_num {
         
     // }
-    let x = Particle::new(1.0);
-    let mut y = x.dv();
-    y = Particle::new(2.0);
+    let x = VectorD::new(1.0, 2.0);
+    let y = Particle::new(x);
     println!("{}", y);
+}
+
+impl<T: KdPoint> Manybody<T> {
+    fn rbmc(&self) {
+        
+    }
+}
+
+impl Particle {
+    fn new(some: VectorD) -> Self {
+        Self(some)
+    }
 }
 
 impl Interaction for Particle {
     fn v_field(&self) -> f64 {
-        self.norm_squared()/2.0
+        self.0.norm_squared()/2.0
     }
 
     fn w_field(&self, other: &Particle) -> f64 {
-        (self-other).norm().ln()
+        (self.0-other.0).norm().ln()
     }
 
-    fn dv(&self) -> Particle {
-        *self
+    fn dv(&self) -> VectorD {
+        self.0
     }
 
-    fn dw(&self, other: &Particle) -> Particle {
-        let delta = self - other;
+    fn dw(&self, other: &Particle) -> VectorD {
+        let delta = self.0 - other.0;
         delta/delta.norm_squared()
+    }
+}
+
+impl std::fmt::Display for Particle {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        self.0.fmt(f)
+    }
+}
+
+impl KdPoint for Particle {
+    type Scalar = f64;
+    type Dim = DimType;
+    fn at (&self, k: usize) -> f64 {
+        self.0[k]
     }
 }
