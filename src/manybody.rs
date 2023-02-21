@@ -2,8 +2,12 @@ pub mod manybody {
 
 use kdtree::KdTree;
 
-pub trait Interaction {
+pub trait Particle {
     type Point: AsRef<[f64]> + PartialEq;
+
+    fn id (&self) -> usize;
+    fn point (&self) -> Self::Point;
+    fn new (id:usize, point: &Self::Point) -> Self;
 
     fn r_split () -> f64;
     fn r_update () -> f64;
@@ -19,16 +23,23 @@ pub trait Interaction {
     fn dw2  (&self, other: &Self)   -> Self::Point;
 }
 
-struct Manybody<'a, T: Interaction> {
+pub struct Manybody<T: Particle> {
     num: usize,
     dimension: usize,
-    particles: Vec<T>,
-    kdtree: KdTree<f64, usize, &'a T::Point>
+    kdtree: KdTree<f64, usize, T::Point>
 }
 
-impl<'a, T: Interaction> Manybody<'a, T> {
+impl<T: Particle> Manybody<T> {
     fn new(dimension: usize, particles: Vec<T>) -> Self {
-        Manybody { num: particles.len(), dimension, particles, kdtree: KdTree::new(dimension) }
+        let mut item = Manybody { 
+            num: particles.len(),
+            dimension,
+            kdtree: KdTree::new(dimension) 
+        };
+        for particle in particles.iter() {
+            item.kdtree.add(particle.point(), particle.id()).unwrap();
+        }
+        item
     }
 
     fn rbmc(

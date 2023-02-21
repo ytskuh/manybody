@@ -6,7 +6,7 @@ use rand::seq::SliceRandom;
 use rand_distr::{StandardNormal};
 use array_tool::vec::Union;
 use num_traits::float::Float;
-use crate::manybody::manybody::Interaction;
+use crate::manybody::manybody::Particle;
 
 const DIM: usize = 2;
 
@@ -14,11 +14,6 @@ type VectorD = na::SVector<f64, DIM>;
 
 #[derive(Clone)]
 struct PointD(VectorD);
-trait Particle {
-    fn id (&self) -> usize;
-    fn point (&self) -> &VectorD;
-    fn new (id:usize, point: &VectorD) -> Self;
-}
 
 struct DBParticle {
     id: usize,
@@ -110,8 +105,20 @@ impl PartialEq for PointD {
     }
 }
 
-impl Interaction for DBParticle {
+impl Particle for DBParticle {
     type Point = PointD;
+
+    fn id(&self) -> usize {
+        self.id
+    }
+
+    fn point(&self) -> PointD {
+        self.point.clone()
+    }
+
+    fn new(id: usize, point: &PointD) -> Self {
+        DBParticle {id, point: point.clone()}
+    }
 
     fn r_split () -> f64 {
         0.01
