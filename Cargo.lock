@@ -75,6 +75,7 @@ dependencies = [
  "array_tool",
  "kdtree",
  "nalgebra",
+ "num-traits",
  "rand",
  "rand_distr",
  "typenum",
