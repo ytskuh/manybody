@@ -7,6 +7,7 @@ use std::fmt::Display;
 
 use rand_distr::StandardNormal;
 use crate::manybody::manybody::Particle;
+use crate::manybody::manybody::Manybody;
 
 const DIM: usize = 2;
 
@@ -26,6 +27,8 @@ fn main() {
     let group_step_time = 0.1;
     let single_step_time = group_step_time/particle_num as f64;
     let step_num = (time_length/single_step_time) as u32;
+    let beta = 1f64;
+    let p = 2;
     println!("{}", step_num);
 
     let mut rng = rand::thread_rng();
@@ -37,18 +40,38 @@ fn main() {
             point: PointD(VectorD::from_distribution(&StandardNormal, &mut rng))
         });
     }
-    write_to_file(&particle_initial, "test2.txt").unwrap();
+    let mut particle_system = Manybody::new(DIM, particle_initial);
+
+    write_str_to_file("x,y", "result.csv", true).unwrap();
+
+    for i in 0..step_num {
+        particle_system.rbmc(single_step_time, beta, p, &mut rng);
+        if i>1000 && (i%particle_num as u32) == 0 {
+            write_vec_to_file(particle_system.particles(), "result.csv", true).unwrap();
+        }
+    }
 }
 
-fn write_to_file<T: Display> (data: &Vec<T>, file_name: &str) -> std::io::Result<()> {
+fn write_vec_to_file<T: Display> (data: &Vec<T>, file_name: &str, append: bool) 
+-> std::io::Result<()> {
     let file = OpenOptions::new()
-        .create(true).append(true)
+        .create(true).append(append)
         .open(file_name)?;
     let mut writer = BufWriter::new(file);
 
     for x in data {
         writeln!(writer, "{}", x)?;
     }
+    Ok(())
+}
+
+fn write_str_to_file (data: &str, file_name: &str, append: bool)
+-> std::io::Result<()> {
+    let file = OpenOptions::new()
+    .create(true).append(append)
+    .open(file_name)?;
+    let mut writer = BufWriter::new(file);
+    writeln!(writer, "{}", data)?;
     Ok(())
 }
 
@@ -66,7 +89,7 @@ impl AsRef<[f64]> for PointD {
 impl Display for DBParticle {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         for (i, num) in self.point.as_ref().iter().enumerate() {
-            if i>0 { write!(f, " ")?;}
+            if i>0 { write!(f, ",")?; }
             write!(f, "{}", num)?;
         }
         Ok(())

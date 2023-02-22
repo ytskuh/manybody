@@ -31,7 +31,7 @@ pub struct Manybody<T: Particle> {
 }
 
 impl<T: Particle> Manybody<T> {
-    fn new(dimension: usize, particles: Vec<T>) -> Self {
+    pub fn new(dimension: usize, particles: Vec<T>) -> Self {
         let mut kdtree = KdTree::new(dimension);
         for particle in particles.iter() {
             kdtree.add(particle.point(), particle.id()).unwrap();
@@ -44,11 +44,15 @@ impl<T: Particle> Manybody<T> {
         }
     }
 
-    fn rbmc(
+    pub fn particles(&self) -> &Vec<T> {
+        &self.particles
+    }
+
+    pub fn rbmc(
         &mut self, dt: f64, beta: f64, p: usize,
         rng: &mut rand::rngs::ThreadRng
     ) {
-
+        
     }
 }
 }
