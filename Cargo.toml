@@ -7,7 +7,7 @@ edition = "2021"
 
 [dependencies]
 kdtree = "0.7.0"
-nalgebra = "0.32.1"
+nalgebra = { version = "0.32.1", features = [ "rand" ] }
 rand = "0.8.5"
 typenum = "1.16.0"
 rand_distr = "0.4.3"
