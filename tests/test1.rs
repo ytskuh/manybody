@@ -1,7 +1,7 @@
 #[cfg(test)]
 mod test {
 use kdtree::KdTree;
-use std::fs::{File, OpenOptions};
+use std::fs::OpenOptions;
 use std::io::{BufWriter, Write};
 
 #[test]
@@ -35,7 +35,5 @@ fn file_write() {
     .unwrap();
     let mut writer = BufWriter::new(file);
     writeln!(writer, "{}", "123 123").unwrap();
-    
 }
-
 }

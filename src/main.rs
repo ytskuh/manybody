@@ -4,16 +4,20 @@ extern crate nalgebra as na;
 use std::fs::OpenOptions; 
 use std::io::{BufWriter, Write};
 use std::fmt::Display;
+use std::ops::*;
+extern crate derive_more;
+use derive_more::{Add, Sub, AddAssign, SubAssign};
+
 
 use rand_distr::StandardNormal;
 use crate::manybody::manybody::Particle;
 use crate::manybody::manybody::Manybody;
 
-const DIM: usize = 2;
+const DIM: usize = 1;
 
 type VectorD = na::SVector<f64, DIM>;
 
-#[derive(Clone, PartialEq)]
+#[derive(Clone, PartialEq, Add, Sub, AddAssign, SubAssign)]
 struct PointD(VectorD);
 
 struct DBParticle {
@@ -23,7 +27,7 @@ struct DBParticle {
 
 fn main() {
     let particle_num = 128;
-    let time_length = 1.0;
+    let time_length = 100.0;
     let group_step_time = 0.1;
     let single_step_time = group_step_time/particle_num as f64;
     let step_num = (time_length/single_step_time) as u32;
@@ -42,7 +46,7 @@ fn main() {
     }
     let mut particle_system = Manybody::new(DIM, particle_initial);
 
-    write_str_to_file("x,y", "result.csv", true).unwrap();
+    write_str_to_file("x", "result.csv", true).unwrap();
 
     for i in 0..step_num {
         particle_system.rbmc(single_step_time, beta, p, &mut rng);
@@ -99,6 +103,14 @@ impl Display for DBParticle {
 impl Particle for DBParticle {
     type Point = PointD;
 
+    fn zero_point() -> Self::Point {
+        PointD(VectorD::zeros())
+    }
+
+    fn standard_normal(rng: &mut rand::rngs::ThreadRng) -> Self::Point {
+        PointD(VectorD::from_distribution(&StandardNormal, rng))
+    }
+
     fn id(&self) -> usize {
         self.id
     }
@@ -111,13 +123,7 @@ impl Particle for DBParticle {
         DBParticle {id, point: point.clone()}
     }
 
-    fn r_split () -> f64 {
-        0.01
-    }
-
-    fn r_update () -> f64 {
-        0.01
-    }
+    fn r_split () -> f64 { 0.01 }  
 
     fn v(&self) -> f64 {
         self.point.0.norm_squared()/2.0
@@ -163,5 +169,29 @@ impl Particle for DBParticle {
     }
 }
 
+impl Mul<f64> for PointD {
+    type Output = PointD;
 
+    fn mul(self, rhs: f64) -> PointD {
+        PointD(self.0*rhs)
+    }
+}
 
+impl Div<f64> for PointD {
+    type Output = PointD;
+    fn div(self, rhs: f64) -> Self::Output {
+        PointD(self.0/rhs)
+    }
+}
+
+impl MulAssign<f64> for PointD {
+    fn mul_assign(&mut self, rhs: f64) {
+        self.0 *= rhs;
+    }
+}
+
+impl DivAssign<f64> for PointD {
+    fn div_assign(&mut self, rhs: f64) {
+        self.0 /= rhs;
+    }
+}
