@@ -50,7 +50,7 @@ fn main() {
 
     for i in 0..step_num {
         particle_system.rbmc(single_step_time, beta, p, &mut rng);
-        if i>1000 && (i%particle_num as u32) == 0 {
+        if i>100000 && (i%particle_num as u32) == 0 {
             write_vec_to_file(particle_system.particles(), "result.csv", true).unwrap();
         }
     }
