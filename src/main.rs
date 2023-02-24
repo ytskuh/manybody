@@ -29,9 +29,12 @@ fn main() {
     let particle_num = 500;
     let time_length = 1f64;
     let step_time = 0.0001;
-    let step_num = (particle_num as f64*time_length/step_time) as u32;
+//    let step_num = (particle_num as f64*time_length/step_time) as u32;
+    let step_num = 1e7 as u32;
+    let skip_step_num = 3000000;
     let beta = 1f64;
     let p = 2;
+    let filename = "result3.csv";
     println!("{}", step_num);
 
     let mut rng = rand::thread_rng();
@@ -43,14 +46,14 @@ fn main() {
             point: PointD(VectorD::from_distribution(&StandardNormal, &mut rng))
         });
     }
-    let mut particle_system = Manybody::new(DIM, particle_initial);
+    let mut particle_system = Manybody::new(particle_initial);
 
-    write_str_to_file("x", "result.csv", true).unwrap();
+    write_str_to_file("x", filename, true).unwrap();
 
     for i in 0..step_num {
         particle_system.rbmc(step_time, beta, p, &mut rng);
-        if i>900000 && (i%particle_num as u32) == 0 {
-            write_vec_to_file(particle_system.particles(), "result.csv", true).unwrap();
+        if i>skip_step_num && (i%particle_num as u32) == 0 {
+            write_vec_to_file(particle_system.particles(), filename, true).unwrap();
         }
     }
 }
@@ -83,15 +86,15 @@ impl PartialEq for DBParticle {
     fn ne(&self, other: &Self) -> bool { self.id != other.id }
 }
 
-impl AsRef<[f64]> for PointD {
-    fn as_ref(&self) -> &[f64] {
+impl AsRef<[f64; DIM]> for PointD {
+    fn as_ref(&self) -> &[f64; DIM] {
         &self.0.data.0[0]
     }
 }
 
 impl Display for DBParticle {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        for (i, num) in self.point.as_ref().iter().enumerate() {
+        for (i, num) in <PointD as AsRef<[f64; DIM]>>::as_ref(&self.point).iter().enumerate() {
             if i>0 { write!(f, ",")?; }
             write!(f, "{}", num)?;
         }
@@ -99,7 +102,7 @@ impl Display for DBParticle {
     }
 }
 
-impl Particle for DBParticle {
+impl Particle<DIM> for DBParticle {
     type Point = PointD;
 
     fn zero_point() -> Self::Point {

@@ -29,8 +29,8 @@ fn union(vec1: Vec<(f64, usize)>, vec2: Vec<(f64, usize)>) -> Vec<(f64, usize)> 
     map.into_iter().map(|(u, f)| (f, u)).collect()
 }
 
-pub trait Particle {
-    type Point: AsRef<[f64]> + PartialEq
+pub trait Particle<const N:usize> {
+    type Point: AsRef<[f64; N]> + PartialEq
         + Add + Sub + AddAssign + SubAssign 
         + Mul<f64, Output = Self::Point>
         + Div<f64, Output = Self::Point>
@@ -55,17 +55,17 @@ pub trait Particle {
     fn dw2  (&self, other: &Self)   -> Self::Point;
 }
 
-pub struct Manybody<T: Particle> {
+pub struct Manybody<T: Particle<DIM>, const DIM:usize> {
     num: usize,
     particles: Vec<T>,
-    kdtree: KdTree<f64, usize, T::Point>
+    kdtree: KdTree<f64, usize, DIM>
 }
 
-impl<T: Particle> Manybody<T> {
-    pub fn new(dimension: usize, particles: Vec<T>) -> Self {
-        let mut kdtree = KdTree::new(dimension);
+impl<T: Particle<N>, const N:usize> Manybody<T, N> {
+    pub fn new(particles: Vec<T>) -> Self {
+        let mut kdtree = KdTree::new();
         for particle in particles.iter() {
-            kdtree.add(particle.point(), particle.id()).unwrap();
+            kdtree.add(particle.point().as_ref(), particle.id()).unwrap();
         }
         Manybody { 
             num: particles.len(),
@@ -119,9 +119,9 @@ impl<T: Particle> Manybody<T> {
         let alpha = (-beta*sum).exp();
         let zeta = rng.gen_range(0.0..1.0);
         if zeta < alpha {
-            self.kdtree.remove(&self.particles[i].point(), &i).unwrap();
+            self.kdtree.remove(&self.particles[i].point().as_ref(), &i).unwrap();
             self.particles[i]=T::new(xstar.id(), &xstar_point);
-            self.kdtree.add(self.particles[i].point(), i).unwrap();
+            self.kdtree.add(self.particles[i].point().as_ref(), i).unwrap();
         }
     }
 }

@@ -12,7 +12,7 @@ fn test_kdtree() {
     kdtree.add(&a.0, a.1).unwrap();
     kdtree.add(&b.0, a.1).unwrap();
 
-    kdtree.remove(&[1f64, 0f64], &0).unwrap();
+    kdtree.remove(&[1f64, 0f64], &2).unwrap();
     assert_eq!(kdtree.size(), 1);
 }
 }
