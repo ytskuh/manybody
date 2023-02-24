@@ -2,8 +2,8 @@ pub mod manybody {
 
 use rand::Rng;
 use rand::prelude::SliceRandom;
-use kdtree::KdTree;
-use kdtree::distance::squared_euclidean;
+use kiddo::KdTree;
+use kiddo::distance::squared_euclidean;
 use std::ops::{Add, Sub, AddAssign, SubAssign, Mul, Div, MulAssign, DivAssign};
 
 use std::collections::HashMap;
@@ -34,7 +34,7 @@ pub trait Particle {
         + Add + Sub + AddAssign + SubAssign 
         + Mul<f64, Output = Self::Point>
         + Div<f64, Output = Self::Point>
-        + MulAssign<f64> + DivAssign<f64>;
+        + MulAssign<f64> + DivAssign<f64> + std::fmt::Debug;
     fn zero_point() -> Self::Point;
     fn standard_normal(rng: &mut rand::rngs::ThreadRng) -> Self::Point;
 
@@ -86,11 +86,17 @@ impl<T: Particle> Manybody<T> {
         let mut xstar_point = self.particles[i].point();
         let mut sum = T::zero_point();
 
-        for xeta in self.particles.choose_multiple(rng, p) {
-            sum += self.particles[i].dw1(xeta);
+        let range: Vec<usize> = (0..self.num-1).collect();
+        for xeta_rawindex in range.choose_multiple(rng, p) {
+            let mut xeta_index = *xeta_rawindex;
+            if *xeta_rawindex >= i { xeta_index += 1; }
+            sum += self.particles[i].dw1(&self.particles[xeta_index]);
         }
         sum /= (p-1) as f64;
-        xstar_point -= (self.particles[i].dv() / (self.num-1) as f64)*dt;
+        xstar_point -= self.particles[i].dv()*dt;
+//        println!("{:?}", self.particles[i].dv()*dt);
+        xstar_point -= sum*dt;
+//        println!("{:?}", xstar_point);
         xstar_point += T::standard_normal(rng) * (2.0 / ((self.num-1) as f64 * beta)).sqrt();
 
         let found1 = self.kdtree.within(
@@ -120,40 +126,3 @@ impl<T: Particle> Manybody<T> {
     }
 }
 }
-
-// impl<T0: Particle + Interaction, A: Float ,T: PartialEq, U: AsRef<[A]> + PartialEq> Manybody<T0, A, T, U> {
-//     fn rbmc(&mut self, dt: f64, beta: f64, p: usize,
-//         rng: &mut rand::rngs::ThreadRng) {
-//         let num = self.1.len();
-//         let i = rng.gen_range(0..num);
-//         let mut xstar_point = VectorD::zeros();
-//         let mut normal = VectorD::zeros();
-
-//         xstar_point.copy_from(&self.1[i].point());
-//         let mut sum = VectorD::zeros();
-//         for xeta in self.1.choose_multiple(rng, p) {
-//             sum += self.1[i].dw1(xeta);
-//         }
-//         sum/=(p-1) as f64;
-//         xstar_point-=dt*(self.1[i].dv()/((num-1) as f64));
-//         for i in 0..DIM {
-//             normal[i]=rng.sample(StandardNormal);
-//         }
-//         xstar_point += (2.0/((num-1) as f64)*beta).sqrt()*normal;
-//         let xstar = T0::new(self.1[i].id(), &xstar_point);
-
-//         let found1 = self.0.within(&xstar, T0::r_update());
-//         let found2 = self.0.within(&self.1[i], T0::r_update());
-//         let found = found1.union(found2);
-//         let mut sum = 0.0;
-//         for xj in found {
-//             sum += xstar.w2(xj) - self.1[i].w2(xj);
-//         }
-//         let alpha = (-beta*sum).exp();
-//         let zeta = rng.gen_range(0.0..1.0);
-//         if zeta < alpha {
-//             self.1.
-//             self.1[i]=T0::new(xstar.id(), xstar.point());
-//         }
-//     }
-// }

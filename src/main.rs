@@ -17,7 +17,7 @@ const DIM: usize = 1;
 
 type VectorD = na::SVector<f64, DIM>;
 
-#[derive(Clone, PartialEq, Add, Sub, AddAssign, SubAssign)]
+#[derive(Clone, PartialEq, Add, Sub, AddAssign, SubAssign, Debug)]
 struct PointD(VectorD);
 
 struct DBParticle {
@@ -26,11 +26,10 @@ struct DBParticle {
 }
 
 fn main() {
-    let particle_num = 128;
-    let time_length = 100.0;
-    let group_step_time = 0.1;
-    let single_step_time = group_step_time/particle_num as f64;
-    let step_num = (time_length/single_step_time) as u32;
+    let particle_num = 500;
+    let time_length = 1f64;
+    let step_time = 0.0001;
+    let step_num = (particle_num as f64*time_length/step_time) as u32;
     let beta = 1f64;
     let p = 2;
     println!("{}", step_num);
@@ -49,8 +48,8 @@ fn main() {
     write_str_to_file("x", "result.csv", true).unwrap();
 
     for i in 0..step_num {
-        particle_system.rbmc(single_step_time, beta, p, &mut rng);
-        if i>100000 && (i%particle_num as u32) == 0 {
+        particle_system.rbmc(step_time, beta, p, &mut rng);
+        if i>900000 && (i%particle_num as u32) == 0 {
             write_vec_to_file(particle_system.particles(), "result.csv", true).unwrap();
         }
     }
