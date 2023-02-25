@@ -30,11 +30,13 @@ fn union(vec1: Vec<(f64, usize)>, vec2: Vec<(f64, usize)>) -> Vec<(f64, usize)> 
 }
 
 pub trait Particle<const N:usize> {
-    type Point: AsRef<[f64; N]> + PartialEq
-        + Add + Sub + AddAssign + SubAssign 
+    type Point: AsRef<[f64; N]> + PartialEq + std::fmt::Debug
+        + Add<Output = Self::Point>
+        + Sub<Output = Self::Point>
+        + AddAssign + SubAssign 
         + Mul<f64, Output = Self::Point>
         + Div<f64, Output = Self::Point>
-        + MulAssign<f64> + DivAssign<f64> + std::fmt::Debug;
+        + MulAssign<f64> + DivAssign<f64>;
     fn zero_point() -> Self::Point;
     fn standard_normal(rng: &mut rand::rngs::ThreadRng) -> Self::Point;
 
@@ -97,7 +99,7 @@ impl<T: Particle<N>, const N:usize> Manybody<T, N> {
 //        println!("{:?}", self.particles[i].dv()*dt);
         xstar_point -= sum*dt;
 //        println!("{:?}", xstar_point);
-        xstar_point += T::standard_normal(rng) * (2.0 / ((self.num-1) as f64 * beta)).sqrt();
+        xstar_point += T::standard_normal(rng) * (2.0*dt / beta).sqrt();
 
         let found1 = self.kdtree.within(
             xstar_point.as_ref(),

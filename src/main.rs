@@ -18,7 +18,7 @@ const DIM: usize = 1;
 type VectorD = na::SVector<f64, DIM>;
 
 #[derive(Clone, PartialEq, Add, Sub, AddAssign, SubAssign, Debug)]
-struct PointD(VectorD);
+pub struct PointD(VectorD);
 
 struct DBParticle {
     id: usize,
@@ -34,7 +34,7 @@ fn main() {
     let skip_step_num = 3000000;
     let beta = 1f64;
     let p = 2;
-    let filename = "result3.csv";
+    let filename = "result5.csv";
     println!("{}", step_num);
 
     let mut rng = rand::thread_rng();
@@ -51,8 +51,8 @@ fn main() {
     write_str_to_file("x", filename, true).unwrap();
 
     for i in 0..step_num {
-        particle_system.rbmc(step_time, beta, p, &mut rng);
-        if i>skip_step_num && (i%particle_num as u32) == 0 {
+        particle_system.rbmc(step_time, beta/ (particle_num-1) as f64, p, &mut rng);
+        if (i%(particle_num*3) as u32) == 0 {
             write_vec_to_file(particle_system.particles(), filename, true).unwrap();
         }
     }
