@@ -4,9 +4,6 @@ extern crate nalgebra as na;
 use std::fs::OpenOptions; 
 use std::io::{BufWriter, Write};
 use std::fmt::Display;
-use std::ops::*;
-extern crate derive_more;
-use derive_more::{Add, Sub, AddAssign, SubAssign};
 
 
 use rand_distr::StandardNormal;
