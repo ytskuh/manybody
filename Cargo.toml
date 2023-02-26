@@ -9,5 +9,5 @@ edition = "2021"
 nalgebra = { version = "0.32.1", features = [ "rand" ] }
 rand = "0.8.5"
 rand_distr = "0.4.3"
-derive_more = "0.99.17"
 kiddo = "0.2.5"
+approx = "0.5.1"

@@ -1,11 +1,11 @@
 mod manybody;
-mod particle;
+mod dbparticle;
 mod data;
 
 extern crate nalgebra as na;
 
 use crate::manybody::{Particle, Manybody};
-use particle::{DBParticle};
+use dbparticle::{DBParticle};
 use data::{write_str_to_file, write_vec_to_file};
 
 fn main() {
