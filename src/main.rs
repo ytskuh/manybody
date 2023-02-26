@@ -10,15 +10,13 @@ use derive_more::{Add, Sub, AddAssign, SubAssign};
 
 
 use rand_distr::StandardNormal;
-use crate::manybody::manybody::Particle;
-use crate::manybody::manybody::Manybody;
+use manybody::{AsArrRef, Particle, Manybody};
 
 const DIM: usize = 1;
 
 type VectorD = na::SVector<f64, DIM>;
 
-#[derive(Clone, PartialEq, Add, Sub, AddAssign, SubAssign, Debug)]
-pub struct PointD(VectorD);
+type PointD = VectorD;
 
 struct DBParticle {
     id: usize,
@@ -43,7 +41,7 @@ fn main() {
     for i in 0..particle_num {
         particle_initial.push(DBParticle {
             id: i,
-            point: PointD(VectorD::from_distribution(&StandardNormal, &mut rng))
+            point: DBParticle::standard_normal(&mut rng)
         });
     }
     let mut particle_system = Manybody::new(particle_initial);
@@ -86,9 +84,9 @@ impl PartialEq for DBParticle {
     fn ne(&self, other: &Self) -> bool { self.id != other.id }
 }
 
-impl AsRef<[f64; DIM]> for PointD {
-    fn as_ref(&self) -> &[f64; DIM] {
-        &self.0.data.0[0]
+impl AsArrRef<1> for PointD {
+    fn as_aref(&self) -> &[f64; DIM] {
+        &self.data.0[0]
     }
 }
 
@@ -106,11 +104,11 @@ impl Particle<DIM> for DBParticle {
     type Point = PointD;
 
     fn zero_point() -> Self::Point {
-        PointD(VectorD::zeros())
+        VectorD::zeros()
     }
 
     fn standard_normal(rng: &mut rand::rngs::ThreadRng) -> Self::Point {
-        PointD(VectorD::from_distribution(&StandardNormal, rng))
+        VectorD::from_distribution(&StandardNormal, rng)
     }
 
     fn id(&self) -> usize {
@@ -128,21 +126,21 @@ impl Particle<DIM> for DBParticle {
     fn r_split () -> f64 { 0.01 }  
 
     fn v(&self) -> f64 {
-        self.point.0.norm_squared()/2.0
+        self.point.norm_squared()/2.0
     }
 
     fn w(&self, other: &DBParticle) -> f64 {
-        -(self.point.0-other.point.0).norm().ln()
+        -(self.point-other.point).norm().ln()
     }
 
     fn w1(&self, other: &DBParticle) -> f64 {
-        let r = (self.point.0-other.point.0).norm();
+        let r = (self.point-other.point).norm();
         if r>0.01 { return -r.ln(); } 
         100.0_f64.ln()-100.0*r+1.0
     }
 
     fn w2(&self, other: &DBParticle) -> f64 {
-        let r = (self.point.0-other.point.0).norm();
+        let r = (self.point-other.point).norm();
         if r>0.01 { return 0.0; }
         -100.0_f64.ln()+100.0*r-1.0   
     }
@@ -152,48 +150,21 @@ impl Particle<DIM> for DBParticle {
     }
 
     fn dw(&self, other: &DBParticle) -> PointD {
-        let delta = self.point.0 - other.point.0;
-        PointD(delta/delta.norm_squared())
+        let delta = self.point - other.point;
+        delta/delta.norm_squared()
     }
 
     fn dw1(&self, other: &DBParticle) -> PointD {
-        let delta = self.point.0 - other.point.0;
+        let delta = self.point - other.point;
         let r2 = delta.norm_squared();
-        if r2>0.0001 { return PointD(-delta/r2); }
-        PointD(-100.0*delta/r2.sqrt())
+        if r2>0.0001 { return -delta/r2; }
+        -100.0*delta/r2.sqrt()
     }
 
     fn dw2(&self, other: &DBParticle) -> PointD {
-        let delta = self.point.0 - other.point.0;
+        let delta = self.point - other.point;
         let r = delta.norm();
-        if r>0.01 { return PointD(VectorD::zeros()); }
-        PointD(100.0*delta/r)
-    }
-}
-
-impl Mul<f64> for PointD {
-    type Output = PointD;
-
-    fn mul(self, rhs: f64) -> PointD {
-        PointD(self.0*rhs)
-    }
-}
-
-impl Div<f64> for PointD {
-    type Output = PointD;
-    fn div(self, rhs: f64) -> Self::Output {
-        PointD(self.0/rhs)
-    }
-}
-
-impl MulAssign<f64> for PointD {
-    fn mul_assign(&mut self, rhs: f64) {
-        self.0 *= rhs;
-    }
-}
-
-impl DivAssign<f64> for PointD {
-    fn div_assign(&mut self, rhs: f64) {
-        self.0 /= rhs;
+        if r>0.01 { return VectorD::zeros(); }
+        100.0*delta/r
     }
 }

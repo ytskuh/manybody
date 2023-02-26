@@ -1,5 +1,3 @@
-pub mod manybody {
-
 use rand::Rng;
 use rand::prelude::SliceRandom;
 use kiddo::KdTree;
@@ -29,8 +27,12 @@ fn union(vec1: Vec<(f64, usize)>, vec2: Vec<(f64, usize)>) -> Vec<(f64, usize)> 
     map.into_iter().map(|(u, f)| (f, u)).collect()
 }
 
+pub trait AsArrRef<const N:usize> {
+    fn as_aref(&self) -> &[f64; N];
+}
+
 pub trait Particle<const N:usize> {
-    type Point: AsRef<[f64; N]> + PartialEq + std::fmt::Debug
+    type Point: AsArrRef<N> + PartialEq + std::fmt::Debug
         + Add<Output = Self::Point>
         + Sub<Output = Self::Point>
         + AddAssign + SubAssign 
@@ -67,7 +69,7 @@ impl<T: Particle<N>, const N:usize> Manybody<T, N> {
     pub fn new(particles: Vec<T>) -> Self {
         let mut kdtree = KdTree::new();
         for particle in particles.iter() {
-            kdtree.add(particle.point().as_ref(), particle.id()).unwrap();
+            kdtree.add(particle.point().as_aref(), particle.id()).unwrap();
         }
         Manybody { 
             num: particles.len(),
@@ -102,12 +104,12 @@ impl<T: Particle<N>, const N:usize> Manybody<T, N> {
         xstar_point += T::standard_normal(rng) * (2.0*dt / beta).sqrt();
 
         let found1 = self.kdtree.within(
-            xstar_point.as_ref(),
+            xstar_point.as_aref(),
             T::r_split(),
             &squared_euclidean
         ).unwrap();
         let found2 = self.kdtree.within(
-            self.particles[i].point().as_ref(),
+            self.particles[i].point().as_aref(),
             T::r_split(),
             &squared_euclidean
         ).unwrap();
@@ -121,10 +123,9 @@ impl<T: Particle<N>, const N:usize> Manybody<T, N> {
         let alpha = (-beta*sum).exp();
         let zeta = rng.gen_range(0.0..1.0);
         if zeta < alpha {
-            self.kdtree.remove(&self.particles[i].point().as_ref(), &i).unwrap();
+            self.kdtree.remove(&self.particles[i].point().as_aref(), &i).unwrap();
             self.particles[i]=T::new(xstar.id(), &xstar_point);
-            self.kdtree.add(self.particles[i].point().as_ref(), i).unwrap();
+            self.kdtree.add(self.particles[i].point().as_aref(), i).unwrap();
         }
     }
-}
 }
