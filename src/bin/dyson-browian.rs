@@ -1,22 +1,17 @@
-mod manybody;
-mod dbparticle;
-mod data;
-
 extern crate nalgebra as na;
 
-use crate::manybody::{Particle, Manybody};
-use dbparticle::{DBParticle};
-use data::{write_str_to_file, write_vec_to_file};
+use manybody::manybody::{Particle, Manybody};
+use manybody::dbparticle::{DBParticle};
+use manybody::data::{write_str_to_file, write_vec_to_file};
 
 fn main() {
     let particle_num = 500;
     let time_length = 2f64;
     let step_time = 0.0001;
     let step_num = (particle_num as f64*time_length/step_time) as u32;
-    let skip_step_num = 3000000;
-    let beta = 1f64;
+    let beta = 2f64;
     let p = 2;
-    let filename = "result5.csv";
+    let filename = "dyson-browian.csv";
     println!("{}", step_num);
 
     let mut rng = rand::thread_rng();
