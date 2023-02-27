@@ -24,7 +24,7 @@ fn main() {
     let args = Args::parse();
 
     let particle_num = args.particle_num;
-    let time_length = args.iterations as f64 * args.step_time;
+    let time_length = (args.iterations/particle_num as u32) as f64 * args.step_time;
     let step_time = args.step_time;
     let step_num = (particle_num as f64*time_length/step_time) as u32;
     let beta = 2f64;
@@ -44,10 +44,11 @@ fn main() {
     let mut particle_system = Manybody::new(particle_initial);
 
     write_str_to_file("x", filename).unwrap();
+    append_vec_to_file(particle_system.particles(), filename).unwrap();
 
     for i in 0..step_num {
         particle_system.rbmc(step_time, beta* (particle_num-1) as f64, p, &mut rng);
-        if (i%(particle_num*3) as u32) == 0 {
+        if (i%particle_num as u32) == 0 {
             append_vec_to_file(particle_system.particles(), filename).unwrap();
         }
     }
