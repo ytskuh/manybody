@@ -76,7 +76,8 @@ impl Particle<DIM> for DBParticle {
 
     fn w2(&self, other: &DBParticle) -> f64 {
         let r = (self.point-other.point).norm();
-        if r>0.01 { return 0.0; }
+        if r>0.01 { 
+            panic!(); }
         -r.ln()-100.0_f64.ln()+100.0*r-1.0   
     }
 

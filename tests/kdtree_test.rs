@@ -31,4 +31,7 @@ fn kdtree_within() {
     assert_eq!(result.len(), 2);
     assert!(result.contains(&(1.0, &1)));
     assert!(result.contains(&(1.0, &0)));
+
+    let result = kdtree.within(&[1.0, 0.0], 0.1, &squared_euclidean).unwrap();
+    assert_eq!(result, []);
 }

@@ -47,7 +47,7 @@ fn main() {
     append_vec_to_file(particle_system.particles(), filename).unwrap();
 
     for i in 0..step_num {
-        particle_system.rbmc(step_time, beta* (particle_num-1) as f64, p, &mut rng);
+        particle_system.rbmc(step_time, beta, p, &mut rng);
         if (i%particle_num as u32) == 0 {
             append_vec_to_file(particle_system.particles(), filename).unwrap();
         }

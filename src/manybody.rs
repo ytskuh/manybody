@@ -4,29 +4,6 @@ use kiddo::KdTree;
 use kiddo::distance::squared_euclidean;
 use std::ops::{Add, Sub, AddAssign, SubAssign, Mul, Div, MulAssign, DivAssign};
 
-use std::collections::HashMap;
-
-fn convert_vec(vec: Vec<(f64, &usize)>) -> Vec<(f64, usize)> {
-    vec.iter().map(|(f, &u)| (*f, u)).collect()
-}
-
-fn union(vec1: Vec<(f64, usize)>, vec2: Vec<(f64, usize)>) -> Vec<(f64, usize)> {
-    let mut map: HashMap<usize, f64> = HashMap::new();
-
-    for elem in vec1.iter().chain(vec2.iter()) {
-        let (f, u) = *elem;
-        if let Some(max_f) = map.get_mut(&u) {
-            if *max_f < f {
-                *max_f = f;
-            }
-        } else {
-            map.insert(u, f);
-        }
-    }
-
-    map.into_iter().map(|(u, f)| (f, u)).collect()
-}
-
 pub trait AsArrRef<const N:usize> {
     fn as_aref(&self) -> &[f64; N];
 }
@@ -98,26 +75,31 @@ impl<T: Particle<N>, const N:usize> Manybody<T, N> {
         }
         sum /= (p-1) as f64;
         xstar_point -= self.particles[i].dv()*dt;
-//        println!("{:?}", self.particles[i].dv()*dt);
         xstar_point -= sum*dt;
-//        println!("{:?}", xstar_point);
-        xstar_point += T::standard_normal(rng) * (2.0*dt / beta).sqrt();
+        xstar_point += T::standard_normal(rng) * (2.0*dt / (beta*(self.num-1) as f64)).sqrt();
 
-        let found1 = self.kdtree.within(
-            xstar_point.as_aref(),
-            T::r_split(),
-            &squared_euclidean
-        ).unwrap();
-        let found2 = self.kdtree.within(
-            self.particles[i].point().as_aref(),
-            T::r_split(),
-            &squared_euclidean
-        ).unwrap();
-        let found = union(convert_vec(found1), convert_vec(found2));
-        let mut sum = 0f64;
         let xstar = T::new(0, &xstar_point);
-        for (_, index) in found {
-            sum += xstar.w2(&self.particles[index]) - self.particles[i].w2(&self.particles[index]);
+        let mut sum = 0f64;
+        let found = self.kdtree.within(
+            xstar_point.as_aref(),
+            T::r_split().powf(2.0),
+            &squared_euclidean
+        ).unwrap();
+        for (_, &index) in found {
+            if index != i {
+            sum += xstar.w2(&self.particles[index])
+            }
+        }
+
+        let found = self.kdtree.within(
+            self.particles[i].point().as_aref(),
+            T::r_split().powf(2.0),
+            &squared_euclidean
+        ).unwrap();
+        for (_, &index) in found {
+            if index != i {
+            sum -= self.particles[i].w2(&self.particles[index])
+            }
         }
 
         let alpha = (-beta*sum).exp();
@@ -129,3 +111,4 @@ impl<T: Particle<N>, const N:usize> Manybody<T, N> {
         }
     }
 }
+
