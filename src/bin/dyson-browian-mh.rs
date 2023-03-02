@@ -1,7 +1,7 @@
 use clap::Parser;
 
 use manybody::manybody::{Particle, Manybody};
-use manybody::dbparticle::{DBParticle};
+use manybody::dbparticle::DBParticle;
 use manybody::data::{write_str_to_file, append_vec_to_file};
 
 #[derive(Parser, Debug)]
@@ -15,21 +15,15 @@ struct Args {
 
     #[arg(long)]
     iterations: u32,
-
-    #[arg(long)]
-    step_time: f64
 }
 
 fn main() {
     let args = Args::parse();
-
     let particle_num = args.particle_num;
-    let time_length = (args.iterations/particle_num as u32) as f64 * args.step_time;
-    let step_time = args.step_time;
-    let step_num = (particle_num as f64*time_length/step_time) as u32;
-    let p = 2;
+    let step_num = args.iterations;
+    let beta = 1.0;
+    let omega = 1.0/(particle_num as f64 - 1.0);
     let filename = &args.output;
-    println!("{}", args.output);
 
     let mut rng = rand::thread_rng();
 
@@ -37,7 +31,7 @@ fn main() {
     for i in 0..particle_num {
         particle_initial.push(DBParticle {
             id: i,
-            point: DBParticle::standard_normal(&mut rng)
+            point: DBParticle::standard_uni(&mut rng)
         });
     }
     let mut particle_system = Manybody::new(particle_initial);
@@ -46,11 +40,9 @@ fn main() {
     append_vec_to_file(particle_system.particles(), filename).unwrap();
 
     for i in 0..step_num {
-        particle_system.rbmc(step_time, (particle_num as f64 - 1.0).powf(2.0), 1.0/(particle_num as f64 - 1.0), p, &mut rng);
+        particle_system.mh(beta, omega, &mut rng);
         if (i%particle_num as u32) == 0 {
             append_vec_to_file(particle_system.particles(), filename).unwrap();
         }
     }
 }
-
-

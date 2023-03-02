@@ -1,6 +1,6 @@
 extern crate nalgebra as na;
 use std::fmt::Display;
-use rand_distr::StandardNormal;
+use rand_distr::{StandardNormal, Uniform};
 use crate::manybody::{AsArrRef, Particle};
 
 const DIM: usize = 1;
@@ -46,6 +46,10 @@ impl Particle<DIM> for DBParticle {
         VectorD::from_distribution(&StandardNormal, rng)
     }
 
+    fn standard_uni(rng: &mut rand::rngs::ThreadRng) -> Self::Point {
+        VectorD::from_distribution(&Uniform::new(-1.0, 1.0), rng)
+    }
+
     fn id(&self) -> usize {
         self.id
     }
@@ -61,21 +65,21 @@ impl Particle<DIM> for DBParticle {
     fn r_split () -> f64 { 0.01 }  
 
     fn v(&self) -> f64 {
-        self.point.norm_squared()/2.0
+        self.point[0].powf(2.0)/2.0
     }
 
     fn w(&self, other: &DBParticle) -> f64 {
-        -(self.point-other.point).norm().ln()
+        -(self.point[0]-other.point[0]).abs().ln()
     }
 
     fn w1(&self, other: &DBParticle) -> f64 {
-        let r = (self.point-other.point).norm();
+        let r = (self.point[0]-other.point[0]).abs();
         if r>0.01 { return -r.ln(); } 
         100.0_f64.ln()-100.0*r+1.0
     }
 
     fn w2(&self, other: &DBParticle) -> f64 {
-        let r = (self.point-other.point).norm();
+        let r = (self.point[0]-other.point[0]).abs();
         if r>0.01 { 
             panic!(); }
         -r.ln()-100.0_f64.ln()+100.0*r-1.0   
@@ -99,7 +103,7 @@ impl Particle<DIM> for DBParticle {
 
     fn dw2(&self, other: &DBParticle) -> PointD {
         let delta = self.point - other.point;
-        let r = delta.norm();
+        let r = delta[0].abs();
         if r>0.01 { return VectorD::zeros(); }
         delta*(100.0/r - 1.0/(r*r))
     }

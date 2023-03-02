@@ -5,7 +5,7 @@ use std::fmt::Display;
 pub fn append_vec_to_file<T: Display> (data: &Vec<T>, file_name: &str) 
 -> std::io::Result<()> {
     let file = OpenOptions::new()
-        .create(true).append(true)
+        .create(false).append(true)
         .open(file_name)?;
     let mut writer = BufWriter::new(file);
 
