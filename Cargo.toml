@@ -12,3 +12,4 @@ rand_distr = "0.4.3"
 kiddo = "0.2.5"
 approx = "0.5.1"
 clap = { version = "4.1.6", features = ["derive"] }
+ndarray = "0.15.6"
