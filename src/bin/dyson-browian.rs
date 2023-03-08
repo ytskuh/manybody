@@ -1,8 +1,8 @@
 use clap::Parser;
 
-use manybody::manybody::{Particle, Manybody};
+use manybody::manybody::{Particle, Manybody, AsArrRef};
 use manybody::dbparticle::{DBParticle};
-use manybody::data::{write_str_to_file, append_vec_to_file};
+use manybody::data::*;
 
 #[derive(Parser, Debug)]
 #[command(version)]
@@ -54,7 +54,7 @@ fn main() {
     }
     let mut particle_system = Manybody::new(particle_initial);
 
-    write_str_to_file("x", filename).unwrap();
+    write_to_file("x", filename).unwrap();
 
     let dt = step_time;
     let beta = (particle_num as f64 - 1.0).powf(2.0);
@@ -65,18 +65,16 @@ fn main() {
         high = args.high.unwrap();
         interval_num = args.interval_num.unwrap();
         let burnin_step = args.burnin_step.unwrap();
-        distribution = vec![0_usize; interval_num];
+        distribution = Histogram::new(&[low], &[high], &[interval_num]);
         for _ in 0..burnin_step {
             particle_system.rbmc(dt, beta, omega, p, &mut rng)[0];
         }
         for _ in burnin_step..step_num {
-            let x = particle_system.rbmc(dt, beta, omega, p, &mut rng)[0];
-            let index = (x-low)/(high-low);
-            if index >= 0.0 && index < 1.0 {
-                distribution[(index * interval_num as f64) as usize]+=1;
-            }
+            let x = particle_system.rbmc(dt, beta, omega, p, &mut rng);
+            distribution.add(x.as_aref());
         }
-        append_vec_to_file(&distribution, filename).unwrap();
+        
+ //       append_vec_to_file(&distribution, filename).unwrap();
     } else {
         append_vec_to_file(particle_system.particles(), filename).unwrap();
         for i in 0..step_num {
@@ -87,3 +85,4 @@ fn main() {
         }
     }
 }
+

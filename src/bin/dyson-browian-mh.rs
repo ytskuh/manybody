@@ -2,7 +2,7 @@ use clap::Parser;
 
 use manybody::manybody::{Particle, Manybody};
 use manybody::dbparticle::DBParticle;
-use manybody::data::{write_str_to_file, append_vec_to_file};
+use manybody::data::*;
 
 #[derive(Parser, Debug)]
 #[command(version)]
@@ -36,7 +36,7 @@ fn main() {
     }
     let mut particle_system = Manybody::new(particle_initial);
 
-    write_str_to_file("x", filename).unwrap();
+    write_to_file("x", filename).unwrap();
     append_vec_to_file(particle_system.particles(), filename).unwrap();
 
     for i in 0..step_num {
