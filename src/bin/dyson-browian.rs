@@ -1,8 +1,9 @@
 use clap::Parser;
 
-use manybody::manybody::{Particle, Manybody, AsArrRef};
+use manybody::manybody::{Particle, Manybody};
 use manybody::dbparticle::DBParticle;
 use manybody::data::*;
+use manybody::rbmc::AutoRBMC;
 
 #[derive(Parser, Debug)]
 #[command(version)]
@@ -23,8 +24,6 @@ struct Args {
     #[arg(long)]
     high: Option<f64>,
     #[arg(long)]
-    interval_num: Option<usize>,
-    #[arg(long)]
     pack_step: Option<usize>
 }
 
@@ -41,7 +40,6 @@ fn main() {
     let low;
     let high;
     let interval_num;
-    let mut distribution;
 
     let mut rng = rand::thread_rng();
 
@@ -55,17 +53,20 @@ fn main() {
     let mut particle_system = Manybody::new(particle_initial, rng);
 
     let dt = step_time;
-    let beta = (particle_num as f64 - 1.0).powf(2.0);
+    let beta = (particle_num as f64 - 1.0).powi(2);
     let omega = 1.0/(particle_num as f64 - 1.0);
 
     if args.distribution {
         low = args.low.unwrap();
         high = args.high.unwrap();
-        interval_num = args.interval_num.unwrap();
         let pack_step = args.pack_step.unwrap();
-        distribution = Histogram::new(&[low], &[high], &[interval_num]);
-        particle_system.rbmc(dt, beta, omega, p)[0];
-        write_to_file(distribution.hist(), filename).unwrap();
+        interval_num = step_num / pack_step;
+        let distribution = Histogram::new(&[low], &[high], &[interval_num]);
+
+        let mut lab = AutoRBMC::new(particle_system, distribution, p, dt, beta, omega, pack_step, 0.9);
+
+        let hist = lab.sample(interval_num);
+        write_to_file(hist, filename).unwrap();
     } else {
         write_to_file("x", filename).unwrap();
         append_vec_to_file(particle_system.particles(), filename).unwrap();

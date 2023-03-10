@@ -86,7 +86,7 @@ impl<T: Particle<N>, const N:usize> Manybody<T, N> {
         let mut sum = 0f64;
         let found = self.kdtree.within(
             xstar_point.as_aref(),
-            T::r_split().powf(2.0),
+            T::r_split().powi(2),
             &squared_euclidean
         ).unwrap();
         for (_, &index) in found {
@@ -97,7 +97,7 @@ impl<T: Particle<N>, const N:usize> Manybody<T, N> {
 
         let found = self.kdtree.within(
             self.particles[i].point().as_aref(),
-            T::r_split().powf(2.0),
+            T::r_split().powi(2),
             &squared_euclidean
         ).unwrap();
         for (_, &index) in found {

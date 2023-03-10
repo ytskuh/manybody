@@ -54,6 +54,13 @@ impl<const N:usize> Histogram<N> {
         Histogram {hist, alpha, beta, shape}
     }
 
+    pub fn new_from_shape(other: &Self) -> Self {
+        let a = &other.alpha;
+        let b = &other.beta;
+        let s = &other.shape;
+        Self::new(a, b, s)
+    }
+
     pub fn add(&mut self, p: &[f64; N]) {
         let mut index = [0; N];
         for i in 0..N {

@@ -66,7 +66,7 @@ impl Particle<DIM> for DBParticle {
     fn r_split () -> f64 { 0.01 }  
 
     fn v(&self) -> f64 {
-        self.point[0].powf(2.0)/2.0
+        self.point[0].powi(2)/2.0
     }
 
     fn w(&self, other: &DBParticle) -> f64 {
