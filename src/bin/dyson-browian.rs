@@ -1,7 +1,7 @@
 use clap::Parser;
 
 use manybody::manybody::{Particle, Manybody, AsArrRef};
-use manybody::dbparticle::{DBParticle};
+use manybody::dbparticle::DBParticle;
 use manybody::data::*;
 
 #[derive(Parser, Debug)]
@@ -25,7 +25,7 @@ struct Args {
     #[arg(long)]
     interval_num: Option<usize>,
     #[arg(long)]
-    burnin_step: Option<usize>
+    pack_step: Option<usize>
 }
 
 fn main() {
@@ -52,9 +52,7 @@ fn main() {
             point: DBParticle::standard_normal(&mut rng)
         });
     }
-    let mut particle_system = Manybody::new(particle_initial);
-
-    write_to_file("x", filename).unwrap();
+    let mut particle_system = Manybody::new(particle_initial, rng);
 
     let dt = step_time;
     let beta = (particle_num as f64 - 1.0).powf(2.0);
@@ -64,21 +62,15 @@ fn main() {
         low = args.low.unwrap();
         high = args.high.unwrap();
         interval_num = args.interval_num.unwrap();
-        let burnin_step = args.burnin_step.unwrap();
+        let pack_step = args.pack_step.unwrap();
         distribution = Histogram::new(&[low], &[high], &[interval_num]);
-        for _ in 0..burnin_step {
-            particle_system.rbmc(dt, beta, omega, p, &mut rng)[0];
-        }
-        for _ in burnin_step..step_num {
-            let x = particle_system.rbmc(dt, beta, omega, p, &mut rng);
-            distribution.add(x.as_aref());
-        }
-        
- //       append_vec_to_file(&distribution, filename).unwrap();
+        particle_system.rbmc(dt, beta, omega, p)[0];
+        write_to_file(distribution.hist(), filename).unwrap();
     } else {
+        write_to_file("x", filename).unwrap();
         append_vec_to_file(particle_system.particles(), filename).unwrap();
         for i in 0..step_num {
-            particle_system.rbmc(dt, beta, omega, p, &mut rng);
+            particle_system.rbmc(dt, beta, omega, p);
             if (i%particle_num) == 0 {
                 append_vec_to_file(particle_system.particles(), filename).unwrap();
             }

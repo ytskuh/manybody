@@ -34,13 +34,13 @@ fn main() {
             point: DBParticle::standard_uni(&mut rng)
         });
     }
-    let mut particle_system = Manybody::new(particle_initial);
+    let mut particle_system = Manybody::new(particle_initial, rng);
 
     write_to_file("x", filename).unwrap();
     append_vec_to_file(particle_system.particles(), filename).unwrap();
 
     for i in 0..step_num {
-        particle_system.mh(beta, omega, &mut rng);
+        particle_system.mh(beta, omega);
         if (i%particle_num as u32) == 0 {
             append_vec_to_file(particle_system.particles(), filename).unwrap();
         }

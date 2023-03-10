@@ -1,5 +1,6 @@
-use rand::Rng;
+use rand::rngs::ThreadRng;
 use rand::prelude::SliceRandom;
+use rand::Rng;
 use kiddo::KdTree;
 use kiddo::distance::squared_euclidean;
 use std::ops::{Add, Sub, AddAssign, SubAssign, Mul, Div, MulAssign, DivAssign};
@@ -17,8 +18,8 @@ pub trait Particle<const N:usize> {
         + Div<f64, Output = Self::Point>
         + MulAssign<f64> + DivAssign<f64>;
     fn zero_point() -> Self::Point;
-    fn standard_normal(rng: &mut rand::rngs::ThreadRng) -> Self::Point;
-    fn standard_uni(rng: &mut rand::rngs::ThreadRng) -> Self::Point;
+    fn standard_normal(rng: &mut ThreadRng) -> Self::Point;
+    fn standard_uni(rng: &mut ThreadRng) -> Self::Point;
 
     fn id (&self) -> usize;
     fn point (&self) -> Self::Point;
@@ -40,11 +41,12 @@ pub trait Particle<const N:usize> {
 pub struct Manybody<T: Particle<DIM>, const DIM:usize> {
     num: usize,
     particles: Vec<T>,
-    kdtree: KdTree<f64, usize, DIM>
+    kdtree: KdTree<f64, usize, DIM>,
+    rng: ThreadRng
 }
 
 impl<T: Particle<N>, const N:usize> Manybody<T, N> {
-    pub fn new(particles: Vec<T>) -> Self {
+    pub fn new(particles: Vec<T>, rng: ThreadRng) -> Self {
         let mut kdtree = KdTree::new();
         for particle in particles.iter() {
             kdtree.add(particle.point().as_aref(), particle.id()).unwrap();
@@ -52,7 +54,8 @@ impl<T: Particle<N>, const N:usize> Manybody<T, N> {
         Manybody { 
             num: particles.len(),
             particles,
-            kdtree
+            kdtree,
+            rng
         }
     }
 
@@ -61,16 +64,15 @@ impl<T: Particle<N>, const N:usize> Manybody<T, N> {
     }
 
     pub fn rbmc (
-        &mut self, dt: f64, beta: f64, omega: f64, p: usize,
-        rng: &mut rand::rngs::ThreadRng
+        &mut self, dt: f64, beta: f64, omega: f64, p: usize
     ) -> T::Point
     {
-        let i = rng.gen_range(0..self.num);
+        let i = self.rng.gen_range(0..self.num);
         let mut xstar_point = self.particles[i].point();
         let mut sum = T::zero_point();
 
         let range: Vec<usize> = (0..self.num-1).collect();
-        for xeta_rawindex in range.choose_multiple(rng, p-1) {
+        for xeta_rawindex in range.choose_multiple(&mut self.rng, p-1) {
             let mut xeta_index = *xeta_rawindex;
             if *xeta_rawindex >= i { xeta_index += 1; }
             sum += self.particles[i].dw1(&self.particles[xeta_index]);
@@ -78,7 +80,7 @@ impl<T: Particle<N>, const N:usize> Manybody<T, N> {
         sum /= (p-1) as f64;
         xstar_point -= self.particles[i].dv()*dt/(omega*(self.num as f64 - 1.0));
         xstar_point -= sum*dt;
-        xstar_point += T::standard_normal(rng) * (2.0*dt / ((self.num as f64-1.0)*omega*omega*beta)).sqrt();
+        xstar_point += T::standard_normal(&mut self.rng) * (2.0*dt / ((self.num as f64-1.0)*omega*omega*beta)).sqrt();
 
         let xstar = T::new(0, &xstar_point);
         let mut sum = 0f64;
@@ -105,7 +107,7 @@ impl<T: Particle<N>, const N:usize> Manybody<T, N> {
         }
 
         let alpha = (-beta*omega*omega*sum).exp();
-        let zeta = rng.gen_range(0.0..1.0);
+        let zeta = self.rng.gen_range(0.0..1.0);
         if zeta < alpha {
             self.kdtree.remove(&self.particles[i].point().as_aref(), &i).unwrap();
             self.particles[i]=T::new(xstar.id(), &xstar_point);
@@ -114,11 +116,11 @@ impl<T: Particle<N>, const N:usize> Manybody<T, N> {
         self.particles[i].point()
     }
 
-    pub fn mh(&mut self, beta: f64, omega: f64, rng: &mut rand::rngs::ThreadRng) -> T::Point {
-        let i = rng.gen_range(0..self.num);
+    pub fn mh(&mut self, beta: f64, omega: f64) -> T::Point {
+        let i = self.rng.gen_range(0..self.num);
         let xi = &self.particles[i];
         let xstar_point = xi.point() 
-        + T::standard_normal(rng);
+        + T::standard_normal(&mut self.rng);
         let xstar = T::new(0, &xstar_point);
         let mut sum = 0f64;
         for j in 0..self.num {
@@ -127,7 +129,7 @@ impl<T: Particle<N>, const N:usize> Manybody<T, N> {
             }
         }
         let alpha = (-beta*omega*(xstar.v()-xi.v())-beta*omega*omega*sum).exp();
-        let zeta = rng.gen_range(0.0..1.0);
+        let zeta = self.rng.gen_range(0.0..1.0);
 //        println!("{}", zeta < alpha);
         if zeta <= alpha {
             self.particles[i]=T::new(xstar.id(), &xstar_point);

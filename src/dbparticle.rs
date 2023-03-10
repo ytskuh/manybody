@@ -1,11 +1,12 @@
-extern crate nalgebra as na;
+use nalgebra::SVector;
 use std::fmt::Display;
 use rand_distr::{StandardNormal, Uniform};
+
 use crate::manybody::{AsArrRef, Particle};
 
 const DIM: usize = 1;
 
-type VectorD = na::SVector<f64, DIM>;
+type VectorD = SVector<f64, DIM>;
 
 type PointD = VectorD;
 
