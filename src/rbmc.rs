@@ -8,6 +8,7 @@ pub struct AutoRBMC<const N:usize, T: Particle<N>> {
     system: Manybody<T, N>,
     hist: Histogram<N>,
     p: usize,
+    m: usize,
     dt: f64,
     beta: f64,
     omega: f64,
@@ -16,25 +17,27 @@ pub struct AutoRBMC<const N:usize, T: Particle<N>> {
     lr: f64
 }
 
-impl<const N:usize, T:Particle<N>> AutoRBMC<N, T> {
+impl<const N:usize, T:Particle<N> + Clone> AutoRBMC<N, T> {
     pub fn new(
         system: Manybody<T, N>, hist:Histogram<N>,
-        p: usize, dt: f64, beta: f64, omega: f64,
+        p: usize, m: usize, dt: f64, beta: f64, omega: f64,
         pack_step: usize, lr: f64
     ) -> Self {
-        AutoRBMC {system, hist, p, dt, beta, omega, pack_step, lr}
+        AutoRBMC {system, hist, m, p, dt, beta, omega, pack_step, lr}
     }
 
     pub fn sample(&mut self, packs: usize) -> ArrayD<f64> {
-        let max_len = 20;
+        let max_len = 4;
+        let cool_down = 4;
+        let mut cool_down_trigger = false;
+        let mut cool_down_count = cool_down;
         let mut hist_list = VecDeque::new();
-        let mut h = Histogram::new_from_shape(&self.hist);
         let mut variance_list = VecDeque::new();
         let mut min_variance = f64::MAX;
         for _ in 0..packs {
-            h = Histogram::new_from_shape(&self.hist);
+            let mut h = Histogram::new_from_shape(&self.hist);
             for _ in 0..self.pack_step {
-                let x = self.system.rbmc(self.dt, self.beta, self.omega, self.p);
+                let x = self.system.rbmc(self.dt, self.beta, self.omega, self.p, self.m);
                 h.add(x.as_aref());
             }
             hist_list.push_back(h.hist_density());
@@ -50,7 +53,12 @@ impl<const N:usize, T:Particle<N>> AutoRBMC<N, T> {
                 variance_list.push_back(sum_of_variance);
                 if sum_of_variance < min_variance { min_variance = sum_of_variance }
             }
-
+            if cool_down_trigger {
+                cool_down_count -= 1;
+                if cool_down_count == 0 {
+                    cool_down_trigger = false;
+                }
+            }
             if variance_list.len() > max_len {
                 variance_list.pop_front();
                 let mut temp = true;
@@ -61,8 +69,15 @@ impl<const N:usize, T:Particle<N>> AutoRBMC<N, T> {
                 }
                 if temp {
                     self.dt*=self.lr;
+                    println!("{}", self.dt);
+                    cool_down_trigger = true;
                 }
             }
+        }
+        let mut h = Histogram::new_from_shape(&self.hist);
+        for _ in 0..self.pack_step*max_len {
+            let x = self.system.rbmc(self.dt, self.beta, self.omega, self.p, self.m);
+            h.add(x.as_aref());
         }
         h.hist_density()
     }

@@ -45,7 +45,7 @@ pub struct Manybody<T: Particle<DIM>, const DIM:usize> {
     rng: ThreadRng
 }
 
-impl<T: Particle<N>, const N:usize> Manybody<T, N> {
+impl<T: Particle<N> + Clone, const N:usize> Manybody<T, N> {
     pub fn new(particles: Vec<T>, rng: ThreadRng) -> Self {
         let mut kdtree = KdTree::new();
         for particle in particles.iter() {
@@ -63,8 +63,27 @@ impl<T: Particle<N>, const N:usize> Manybody<T, N> {
         &self.particles
     }
 
+    fn rbmc_step1(&mut self, xi: T, dt: f64, p:usize, std: f64, a: f64) -> T {
+        let mut sum = T::zero_point();
+        let range: Vec<usize> = (0..self.num-1).collect();
+        // for xeta_rawindex in range.choose_multiple(&mut self.rng, p-1) {
+        //     if *xeta_rawindex < xi.id() {
+        //         sum += xi.dw1(&self.particles[*xeta_rawindex]);
+        //     } else {
+        //         sum += xi.dw1(&self.particles[*xeta_rawindex+1]);
+        //     }
+        // }
+        for xeta_rawindex in range.choose_multiple(&mut self.rng, p-1) {
+            let mut xeta_index = *xeta_rawindex;
+            if *xeta_rawindex >= xi.id() { xeta_index += 1; }
+            sum += xi.dw1(&self.particles[xeta_index]);
+        }
+        sum /= (p-1) as f64;
+        T::new(xi.id(), &(xi.point() - (xi.dv()/a+sum)*dt + T::standard_normal(&mut self.rng) * std))
+    }
+
     pub fn rbmc (
-        &mut self, dt: f64, beta: f64, omega: f64, p: usize
+        &mut self, dt: f64, beta: f64, omega: f64, p: usize, m: usize
     ) -> T::Point
     {
         let i = self.rng.gen_range(0..self.num);
@@ -81,17 +100,23 @@ impl<T: Particle<N>, const N:usize> Manybody<T, N> {
         xstar_point -= self.particles[i].dv()*dt/(omega*(self.num as f64 - 1.0));
         xstar_point -= sum*dt;
         xstar_point += T::standard_normal(&mut self.rng) * (2.0*dt / ((self.num as f64-1.0)*omega*omega*beta)).sqrt();
+        let xstar = T::new(i, &xstar_point);
+        // let a = omega*(self.num as f64 - 1.0);
+        // let std = (2.0*dt / ((self.num as f64 - 1.0)*omega*omega*beta)).sqrt();
+        // let mut xstar = self.particles[i].clone();
+        // for _ in 0..m {
+        //     xstar = self.rbmc_step1(xstar, dt, p, std, a);
+        // }
 
-        let xstar = T::new(0, &xstar_point);
         let mut sum = 0f64;
         let found = self.kdtree.within(
-            xstar_point.as_aref(),
+            xstar.point().as_aref(),
             T::r_split().powi(2),
             &squared_euclidean
         ).unwrap();
         for (_, &index) in found {
             if index != i {
-            sum += xstar.w2(&self.particles[index])
+                sum += xstar.w2(&self.particles[index]);
             }
         }
 
@@ -102,7 +127,7 @@ impl<T: Particle<N>, const N:usize> Manybody<T, N> {
         ).unwrap();
         for (_, &index) in found {
             if index != i {
-            sum -= self.particles[i].w2(&self.particles[index])
+                sum -= self.particles[i].w2(&self.particles[index]);
             }
         }
 
@@ -110,7 +135,7 @@ impl<T: Particle<N>, const N:usize> Manybody<T, N> {
         let zeta = self.rng.gen_range(0.0..1.0);
         if zeta < alpha {
             self.kdtree.remove(&self.particles[i].point().as_aref(), &i).unwrap();
-            self.particles[i]=T::new(xstar.id(), &xstar_point);
+            self.particles[i]=T::new(xstar.id(), &xstar.point());
             self.kdtree.add(self.particles[i].point().as_aref(), i).unwrap();
         }
         self.particles[i].point()

@@ -24,6 +24,8 @@ struct Args {
     #[arg(long)]
     high: Option<f64>,
     #[arg(long)]
+    interval_num: Option<usize>,
+    #[arg(long)]
     pack_step: Option<usize>
 }
 
@@ -59,23 +61,24 @@ fn main() {
     if args.distribution {
         low = args.low.unwrap();
         high = args.high.unwrap();
+        interval_num = args.interval_num.unwrap();
         let pack_step = args.pack_step.unwrap();
-        interval_num = step_num / pack_step;
         let distribution = Histogram::new(&[low], &[high], &[interval_num]);
 
-        let mut lab = AutoRBMC::new(particle_system, distribution, p, dt, beta, omega, pack_step, 0.9);
+        let packs = step_num / pack_step;
 
-        let hist = lab.sample(interval_num);
+        let mut lab = AutoRBMC::new(particle_system, distribution, p, 9, dt, beta, omega, pack_step, 0.5);
+
+        let hist = lab.sample(packs);
         write_to_file(hist, filename).unwrap();
     } else {
         write_to_file("x", filename).unwrap();
         append_vec_to_file(particle_system.particles(), filename).unwrap();
         for i in 0..step_num {
-            particle_system.rbmc(dt, beta, omega, p);
+            particle_system.rbmc(dt, beta, omega, p, 9);
             if (i%particle_num) == 0 {
                 append_vec_to_file(particle_system.particles(), filename).unwrap();
             }
         }
     }
 }
-

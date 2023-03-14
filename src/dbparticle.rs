@@ -109,3 +109,9 @@ impl Particle<DIM> for DBParticle {
         delta*(100.0/r - 1.0/(r*r))
     }
 }
+
+impl Clone for DBParticle {
+    fn clone(&self) -> Self {
+        Self::new(self.id(), &self.point())
+    }
+}
