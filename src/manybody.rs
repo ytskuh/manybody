@@ -23,7 +23,7 @@ pub trait Particle<const N:usize> {
 
     fn id (&self) -> usize;
     fn point (&self) -> Self::Point;
-    fn new (id:usize, point: &Self::Point) -> Self;
+    fn new_position (&self, point: &Self::Point) -> Self;
 
     fn r_split () -> f64;
 
@@ -73,7 +73,7 @@ impl<T: Particle<N> + Clone, const N:usize> Manybody<T, N> {
                 sum += xi.dw1(&self.particles[*xeta_rawindex+1]);
             }
         }
-        T::new(xi.id(), &(xi.point() - (xi.dv()/a+sum/(p-1) as f64)*dt + T::standard_normal(&mut self.rng) * std))
+        T::new_position(&xi, &(xi.point() - (xi.dv()/a+sum/(p-1) as f64)*dt + T::standard_normal(&mut self.rng) * std))
     }
 
     pub fn rbmc (
@@ -115,7 +115,7 @@ impl<T: Particle<N> + Clone, const N:usize> Manybody<T, N> {
         let zeta = self.rng.gen_range(0.0..1.0);
         if zeta < alpha {
             self.kdtree.remove(&self.particles[i].point().as_aref(), &i).unwrap();
-            self.particles[i]=T::new(xstar.id(), &xstar.point());
+            self.particles[i]=xstar;
             self.kdtree.add(self.particles[i].point().as_aref(), i).unwrap();
         }
         self.particles[i].point()
@@ -124,9 +124,7 @@ impl<T: Particle<N> + Clone, const N:usize> Manybody<T, N> {
     pub fn mh(&mut self, beta: f64, omega: f64) -> T::Point {
         let i = self.rng.gen_range(0..self.num);
         let xi = &self.particles[i];
-        let xstar_point = xi.point() 
-        + T::standard_normal(&mut self.rng);
-        let xstar = T::new(0, &xstar_point);
+        let xstar = T::new_position(xi, &(xi.point()+T::standard_normal(&mut self.rng)));
         let mut sum = 0f64;
         for j in 0..self.num {
             if j != i {
@@ -137,7 +135,7 @@ impl<T: Particle<N> + Clone, const N:usize> Manybody<T, N> {
         let zeta = self.rng.gen_range(0.0..1.0);
 //        println!("{}", zeta < alpha);
         if zeta <= alpha {
-            self.particles[i]=T::new(xstar.id(), &xstar_point);
+            self.particles[i]=xstar;
         }
         self.particles[i].point()
     }

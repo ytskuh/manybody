@@ -59,8 +59,8 @@ impl Particle<DIM> for DBParticle {
         self.point.clone()
     }
 
-    fn new(id: usize, point: &PointD) -> Self {
-        DBParticle {id, point: point.clone()}
+    fn new_position(&self, point: &PointD) -> Self {
+        DBParticle {id: self.id, point: point.clone()}
     }
 
     fn r_split () -> f64 { 0.01 }  
@@ -112,6 +112,6 @@ impl Particle<DIM> for DBParticle {
 
 impl Clone for DBParticle {
     fn clone(&self) -> Self {
-        Self::new(self.id(), &self.point())
+        DBParticle { id: self.id, point: self.point.clone() }
     }
 }
