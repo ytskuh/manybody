@@ -66,20 +66,14 @@ impl<T: Particle<N> + Clone, const N:usize> Manybody<T, N> {
     fn rbmc_step1(&mut self, xi: T, dt: f64, p:usize, std: f64, a: f64) -> T {
         let mut sum = T::zero_point();
         let range: Vec<usize> = (0..self.num-1).collect();
-        // for xeta_rawindex in range.choose_multiple(&mut self.rng, p-1) {
-        //     if *xeta_rawindex < xi.id() {
-        //         sum += xi.dw1(&self.particles[*xeta_rawindex]);
-        //     } else {
-        //         sum += xi.dw1(&self.particles[*xeta_rawindex+1]);
-        //     }
-        // }
         for xeta_rawindex in range.choose_multiple(&mut self.rng, p-1) {
-            let mut xeta_index = *xeta_rawindex;
-            if *xeta_rawindex >= xi.id() { xeta_index += 1; }
-            sum += xi.dw1(&self.particles[xeta_index]);
+            if *xeta_rawindex < xi.id() {
+                sum += xi.dw1(&self.particles[*xeta_rawindex]);
+            } else {
+                sum += xi.dw1(&self.particles[*xeta_rawindex+1]);
+            }
         }
-        sum /= (p-1) as f64;
-        T::new(xi.id(), &(xi.point() - (xi.dv()/a+sum)*dt + T::standard_normal(&mut self.rng) * std))
+        T::new(xi.id(), &(xi.point() - (xi.dv()/a+sum/(p-1) as f64)*dt + T::standard_normal(&mut self.rng) * std))
     }
 
     pub fn rbmc (
@@ -87,26 +81,12 @@ impl<T: Particle<N> + Clone, const N:usize> Manybody<T, N> {
     ) -> T::Point
     {
         let i = self.rng.gen_range(0..self.num);
-        let mut xstar_point = self.particles[i].point();
-        let mut sum = T::zero_point();
-
-        let range: Vec<usize> = (0..self.num-1).collect();
-        for xeta_rawindex in range.choose_multiple(&mut self.rng, p-1) {
-            let mut xeta_index = *xeta_rawindex;
-            if *xeta_rawindex >= i { xeta_index += 1; }
-            sum += self.particles[i].dw1(&self.particles[xeta_index]);
+        let a = omega*(self.num as f64 - 1.0);
+        let std = (2.0*dt / ((self.num as f64 - 1.0)*omega*omega*beta)).sqrt();
+        let mut xstar = self.particles[i].clone();
+        for _ in 0..m {
+            xstar = self.rbmc_step1(xstar, dt, p, std, a);
         }
-        sum /= (p-1) as f64;
-        xstar_point -= self.particles[i].dv()*dt/(omega*(self.num as f64 - 1.0));
-        xstar_point -= sum*dt;
-        xstar_point += T::standard_normal(&mut self.rng) * (2.0*dt / ((self.num as f64-1.0)*omega*omega*beta)).sqrt();
-        let xstar = T::new(i, &xstar_point);
-        // let a = omega*(self.num as f64 - 1.0);
-        // let std = (2.0*dt / ((self.num as f64 - 1.0)*omega*omega*beta)).sqrt();
-        // let mut xstar = self.particles[i].clone();
-        // for _ in 0..m {
-        //     xstar = self.rbmc_step1(xstar, dt, p, std, a);
-        // }
 
         let mut sum = 0f64;
         let found = self.kdtree.within(

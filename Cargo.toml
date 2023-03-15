@@ -13,3 +13,4 @@ kiddo = "0.2.5"
 approx = "0.5.1"
 clap = { version = "4.1.6", features = ["derive"] }
 ndarray = "0.15.6"
+serde = { version = "1.0.155", features = ["derive"] }

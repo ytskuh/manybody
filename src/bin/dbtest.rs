@@ -3,8 +3,8 @@ use manybody::dbparticle::DBParticle;
 use manybody::data::*;
 
 fn main() {
-    let particle_num = 500;
-    let step_time = 0.001;
+    let particle_num = 640;
+    let step_time = 0.00002;
     let p = 2;
 
     let low = -2.0;
@@ -26,7 +26,7 @@ fn main() {
     let beta = (particle_num as f64 - 1.0).powi(2);
     let omega = 1.0/(particle_num as f64 - 1.0);
 
-    for n in 0_u32..6 {
+    for n in 0_u32..13 {
         let mut hist = Histogram::new(&[low], &[high], &[interval_num]);
         for _ in 0..100000*2_u32.pow(n) {
             hist.add(particle_system.rbmc(dt, beta, omega, p, 1).as_aref());
