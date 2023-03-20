@@ -38,7 +38,7 @@ impl<const N:usize, T:Particle<N> + Clone> AutoRBMC<N, T> {
             let mut h = Histogram::new_from_shape(&self.hist);
             for _ in 0..self.pack_step {
                 let x = self.system.rbmc(self.dt, self.beta, self.omega, self.p, self.m);
-                h.add(x.as_aref());
+                h.add(x.point().as_aref());
             }
             hist_list.push_back(h.hist_density());
             if hist_list.len() > max_len {
@@ -77,7 +77,7 @@ impl<const N:usize, T:Particle<N> + Clone> AutoRBMC<N, T> {
         let mut h = Histogram::new_from_shape(&self.hist);
         for _ in 0..self.pack_step*max_len {
             let x = self.system.rbmc(self.dt, self.beta, self.omega, self.p, self.m);
-            h.add(x.as_aref());
+            h.add(x.point().as_aref());
         }
         h.hist_density()
     }

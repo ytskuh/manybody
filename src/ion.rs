@@ -19,19 +19,32 @@ impl PartialEq for Ion {
     fn ne(&self, other: &Self) -> bool { self.id != other.id }
 }
 
-impl AsArrRef<3> for PointD {
+impl AsArrRef<DIM> for PointD {
     fn as_aref(&self) -> &[f64; DIM] {
         &self.data.0[0]
     }
 }
 
-// impl Particle for Ion {
-//     type Point = PointD;
+const Q_PLUS: f64 = 10.0;
+const R_SPILT: f64 = 1.0;
+const Q: f64 = 0.1;
+const N: usize = 100;
 
-//     fn id (&self) -> usize { self.id }
-//     fn point (&self) -> PointD { self.point.clone() }
-//     fn new (id:usize, point: &Self::Point) -> Self {
+
+impl Particle<DIM> for Ion {
+    type Point = PointD;
+
+    fn id (&self) -> usize { self.id }
+    fn point (&self) -> PointD { self.point.clone() }
+    fn new_position (&self, point: &Self::Point) -> Self {
+        Ion {id: self.id, z: self.z, point: point.clone()}
+    }
+
+    fn r_split () -> f64 {
+        R_SPILT
+    }
+
+    fn v(&self) -> f64 {
         
-//     }
-
-// }
+    }
+}

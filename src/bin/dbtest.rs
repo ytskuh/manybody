@@ -29,7 +29,7 @@ fn main() {
     for n in 0_u32..13 {
         let mut hist = Histogram::new(&[low], &[high], &[interval_num]);
         for _ in 0..100000*2_u32.pow(n) {
-            hist.add(particle_system.rbmc(dt, beta, omega, p, 1).as_aref());
+            hist.add(particle_system.rbmc(dt, beta, omega, p, 9).point().as_aref());
         }
         write_to_file(hist.hist_density(), &n.to_string()).unwrap();
     }

@@ -78,7 +78,7 @@ impl<T: Particle<N> + Clone, const N:usize> Manybody<T, N> {
 
     pub fn rbmc (
         &mut self, dt: f64, beta: f64, omega: f64, p: usize, m: usize
-    ) -> T::Point
+    ) -> &T
     {
         let i = self.rng.gen_range(0..self.num);
         let a = omega*(self.num as f64 - 1.0);
@@ -118,7 +118,7 @@ impl<T: Particle<N> + Clone, const N:usize> Manybody<T, N> {
             self.particles[i]=xstar;
             self.kdtree.add(self.particles[i].point().as_aref(), i).unwrap();
         }
-        self.particles[i].point()
+        &self.particles[i]
     }
 
     pub fn mh(&mut self, beta: f64, omega: f64) -> T::Point {

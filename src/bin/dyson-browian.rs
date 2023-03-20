@@ -1,9 +1,8 @@
 use clap::Parser;
 
-use manybody::manybody::{Particle, Manybody};
+use manybody::manybody::{Particle, Manybody, AsArrRef};
 use manybody::dbparticle::DBParticle;
 use manybody::data::*;
-use manybody::rbmc::AutoRBMC;
 
 #[derive(Parser, Debug)]
 #[command(version)]
@@ -13,35 +12,41 @@ struct Args {
     #[arg(long)]
     particle_num: usize,
     #[arg(long)]
-    iterations: u32,
+    iteration: u32,
     #[arg(long)]
     step_time: f64,
 
     #[arg(long)]
-    distribution: bool,
+    burn_in: Option<usize>,
+    #[arg(long)]
+    p: Option<usize>,
+    #[arg(long)]
+    m: Option<usize>,
+
+    #[arg(long)]
+    raw: bool,
     #[arg(long)]
     low: Option<f64>,
     #[arg(long)]
     high: Option<f64>,
     #[arg(long)]
-    interval_num: Option<usize>,
-    #[arg(long)]
-    pack_step: Option<usize>
+    interval_num: Option<usize>
 }
 
 fn main() {
     let args = Args::parse();
 
     let particle_num = args.particle_num;
-    let time_length = (args.iterations/particle_num as u32) as f64 * args.step_time;
+    let time_length = (args.iteration/particle_num as u32) as f64 * args.step_time;
     let step_time = args.step_time;
-    let step_num = (particle_num as f64*time_length/step_time) as usize;
-    let p = 2;
+    let iteration = (particle_num as f64*time_length/step_time) as usize;
+    let p = match args.p { Some(p) => p, None => 2 };
+    let m = match args.m { Some(m) => m, None => 9 };
+    let burn_in = match args.burn_in {
+        Some(b) => b,
+        None => iteration/2
+    };
     let filename = &args.output;
-
-    let low;
-    let high;
-    let interval_num;
 
     let mut rng = rand::thread_rng();
 
@@ -58,27 +63,24 @@ fn main() {
     let beta = (particle_num as f64 - 1.0).powi(2);
     let omega = 1.0/(particle_num as f64 - 1.0);
 
-    if args.distribution {
-        low = args.low.unwrap();
-        high = args.high.unwrap();
-        interval_num = args.interval_num.unwrap();
-        let pack_step = args.pack_step.unwrap();
-        let distribution = Histogram::new(&[low], &[high], &[interval_num]);
-
-        let packs = step_num / pack_step;
-
-        let mut lab = AutoRBMC::new(particle_system, distribution, p, 9, dt, beta, omega, pack_step, 0.5);
-
-        let hist = lab.sample(packs);
-        write_to_file(hist, filename).unwrap();
-    } else {
+    for _ in 0..burn_in {
+        particle_system.rbmc(dt, beta, omega, p, m);
+    }
+    if args.raw {
         write_to_file("x", filename).unwrap();
-        append_vec_to_file(particle_system.particles(), filename).unwrap();
-        for i in 0..step_num {
-            particle_system.rbmc(dt, beta, omega, p, 9);
-            if (i%particle_num) == 0 {
-                append_vec_to_file(particle_system.particles(), filename).unwrap();
-            }
+        for _ in burn_in..iteration {
+            let x = particle_system.rbmc(dt, beta, omega, p, m);
+            append_to_file(x.point(), filename).unwrap();
         }
+    } else {
+        let l = args.low.unwrap();
+        let h = args.high.unwrap();
+        let s = args.interval_num.unwrap();
+        let mut hist = Histogram::new(&[l], &[h], &[s]);
+        for _ in burn_in..iteration {
+            let x = particle_system.rbmc(dt, beta, omega, p, m);
+            hist.add(x.point().as_aref());
+        }
+        write_to_file(hist.hist_density(), filename).unwrap();
     }
 }
