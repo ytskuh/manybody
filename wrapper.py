@@ -16,3 +16,4 @@ def l1divergence(hist, f, low, high, bins):
     for i in range(bins):
         hist_expected[i] = quad(f, low+h*i, low+h*i+h)[0]
     return np.abs(hist/hist.sum()-hist_expected).sum()
+ 
