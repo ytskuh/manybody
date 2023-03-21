@@ -39,6 +39,8 @@ impl Display for DBParticle {
 impl Particle<DIM> for DBParticle {
     type Point = PointD;
 
+    const R_SPLIT: f64 = 0.01;
+
     fn zero_point() -> Self::Point {
         VectorD::zeros()
     }
@@ -63,7 +65,9 @@ impl Particle<DIM> for DBParticle {
         DBParticle {id: self.id, point: point.clone()}
     }
 
-    fn r_split () -> f64 { 0.01 }  
+    fn reflection (point: &PointD) -> Self::Point {
+        point.clone()
+    }
 
     fn v(&self) -> f64 {
         self.point[0].powi(2)/2.0

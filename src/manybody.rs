@@ -17,6 +17,9 @@ pub trait Particle<const N:usize> {
         + Mul<f64, Output = Self::Point>
         + Div<f64, Output = Self::Point>
         + MulAssign<f64> + DivAssign<f64>;
+
+    const R_SPLIT: f64;
+
     fn zero_point() -> Self::Point;
     fn standard_normal(rng: &mut ThreadRng) -> Self::Point;
     fn standard_uni(rng: &mut ThreadRng) -> Self::Point;
@@ -25,8 +28,7 @@ pub trait Particle<const N:usize> {
     fn point (&self) -> Self::Point;
     fn new_position (&self, point: &Self::Point) -> Self;
 
-    fn r_split () -> f64;
-
+    fn reflection (point: &Self::Point) -> Self::Point;
     fn v    (&self)                 -> f64;
     fn w    (&self, other: &Self)   -> f64;
     fn w1   (&self, other: &Self)   -> f64;
@@ -73,7 +75,7 @@ impl<T: Particle<N> + Clone, const N:usize> Manybody<T, N> {
                 sum += xi.dw1(&self.particles[*xeta_rawindex+1]);
             }
         }
-        T::new_position(&xi, &(xi.point() - (xi.dv()/a+sum/(p-1) as f64)*dt + T::standard_normal(&mut self.rng) * std))
+        T::new_position(&xi, &T::reflection(&(xi.point() - (xi.dv()/a+sum/(p-1) as f64)*dt + T::standard_normal(&mut self.rng) * std)))
     }
 
     pub fn rbmc (
@@ -91,7 +93,7 @@ impl<T: Particle<N> + Clone, const N:usize> Manybody<T, N> {
         let mut sum = 0f64;
         let found = self.kdtree.within(
             xstar.point().as_aref(),
-            T::r_split().powi(2),
+            T::R_SPLIT.powi(2),
             &squared_euclidean
         ).unwrap();
         for (_, &index) in found {
@@ -102,7 +104,7 @@ impl<T: Particle<N> + Clone, const N:usize> Manybody<T, N> {
 
         let found = self.kdtree.within(
             self.particles[i].point().as_aref(),
-            T::r_split().powi(2),
+            T::R_SPLIT.powi(2),
             &squared_euclidean
         ).unwrap();
         for (_, &index) in found {
