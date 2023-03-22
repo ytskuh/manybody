@@ -108,7 +108,7 @@ impl Particle<DIM> for Ion {
     fn dw (&self, other: &Self) -> Self::Point {
         let delta = self.point - other.point;
         let r = delta.norm();
-        if r > Self::R_SPLIT {
+        if r > SIGMA {
             -self.z*other.z*delta/(4.0*PI*r.powi(3))
         } else {
             Self::zero_point()
