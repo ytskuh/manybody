@@ -61,6 +61,10 @@ impl Particle<DIM> for DBParticle {
         self.point.clone()
     }
 
+    fn norm(&self) -> f64 {
+        self.point.norm()
+    }
+
     fn new_position(&self, point: &PointD) -> Self {
         DBParticle {id: self.id, point: point.clone()}
     }

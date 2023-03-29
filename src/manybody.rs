@@ -20,6 +20,8 @@ pub trait Particle<const N:usize> {
 
     const R_SPLIT: f64;
 
+    fn norm(&self) -> f64;
+
     fn zero_point() -> Self::Point;
     fn standard_normal(rng: &mut ThreadRng) -> Self::Point;
     fn standard_uni(rng: &mut ThreadRng) -> Self::Point;
@@ -44,7 +46,8 @@ pub struct Manybody<T: Particle<DIM>, const DIM:usize> {
     num: usize,
     particles: Vec<T>,
     kdtree: KdTree<f64, usize, DIM>,
-    rng: ThreadRng
+    rng: ThreadRng,
+    pub count: usize
 }
 
 impl<T: Particle<N> + Clone, const N:usize> Manybody<T, N> {
@@ -57,7 +60,8 @@ impl<T: Particle<N> + Clone, const N:usize> Manybody<T, N> {
             num: particles.len(),
             particles,
             kdtree,
-            rng
+            rng,
+            count: 0
         }
     }
 
@@ -119,11 +123,12 @@ impl<T: Particle<N> + Clone, const N:usize> Manybody<T, N> {
             self.kdtree.remove(&self.particles[i].point().as_aref(), &i).unwrap();
             self.particles[i]=xstar;
             self.kdtree.add(self.particles[i].point().as_aref(), i).unwrap();
+            self.count += 1;
         }
         &self.particles[i]
     }
 
-    pub fn mh(&mut self, beta: f64, omega: f64) -> T::Point {
+    pub fn mh(&mut self, beta: f64, omega: f64) -> &T {
         let i = self.rng.gen_range(0..self.num);
         let xi = &self.particles[i];
         let xstar = T::new_position(xi, &(xi.point()+T::standard_normal(&mut self.rng)));
@@ -138,8 +143,9 @@ impl<T: Particle<N> + Clone, const N:usize> Manybody<T, N> {
 //        println!("{}", zeta < alpha);
         if zeta <= alpha {
             self.particles[i]=xstar;
+            self. count +=1;
         }
-        self.particles[i].point()
+        &self.particles[i]
     }
 }
 

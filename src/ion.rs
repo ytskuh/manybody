@@ -4,7 +4,7 @@ use rand_distr::{StandardNormal, Uniform};
 
 use crate::manybody::{AsArrRef, Particle};
 
-const DIM: usize = 3;
+pub const DIM: usize = 3;
 
 type PointD = SVector<f64, DIM>;
 
@@ -25,12 +25,17 @@ impl AsArrRef<DIM> for PointD {
     }
 }
 
-const Q_PLUS: f64 = 10.0;
+pub static Q_PLUS: f64 = 10.0;
+pub static QF: f64 = 10.0;
 const R: f64 = 1.0;
-pub const Q: f64 = 0.1;
-pub const N: usize = 100;
-const R_C: f64 = 0.1;
-const SIGMA: f64 = 0.215;
+
+pub static N_PLUS: usize = 100;
+pub static N_NEGA: usize = 200;
+const R_C: f64 = 1.0;
+static SIGMA: f64 = 0.1493;
+
+const R2: f64 = R*R;
+
 
 impl Particle<DIM> for Ion {
     type Point = PointD;
@@ -53,8 +58,14 @@ impl Particle<DIM> for Ion {
         PointD::from_distribution(&Uniform::new(-1.0, 1.0), rng)
     }
 
+    fn norm(&self) -> f64 {
+        self.point.norm()
+    }
+
     fn reflection(point: &Self::Point) -> Self::Point {
-        point*R.powi(2)/point.norm_squared()
+        let r2 = point.norm_squared();
+        if r2 > R2 { point.clone() } 
+        else { point*(R2/r2) }
     }
 
     fn v(&self) -> f64 {
@@ -68,7 +79,6 @@ impl Particle<DIM> for Ion {
         } else {
             self.z*other.z/(4.0*PI*SIGMA)
         }
-        
     }
 
     fn w1(&self, other: &Self) -> f64 {
@@ -145,5 +155,11 @@ impl Particle<DIM> for Ion {
         } else {
             -self.z*other.z*delta/(4.0*PI*r*Self::R_SPLIT*SIGMA)
         }
+    }
+}
+
+impl Clone for Ion {
+    fn clone(&self) -> Self {
+        Ion {id: self.id, z: self.z, point: self.point.clone()}
     }
 }
