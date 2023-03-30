@@ -21,7 +21,7 @@ fn main() {
     let args = Args::parse();
     let particle_num = args.particle_num;
     let step_num = args.iterations;
-    let beta = 1.0;
+    let beta = (particle_num as f64 - 1.0).powi(2);
     let omega = 1.0/(particle_num as f64 - 1.0);
     let filename = &args.output;
 

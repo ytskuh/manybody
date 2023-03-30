@@ -69,7 +69,7 @@ impl Particle<DIM> for Ion {
     }
 
     fn v(&self) -> f64 {
-        self.z*Q_PLUS/(4.0*PI*self.point.norm())
+        self.z*QF/(4.0*PI*self.point.norm())
     }
 
     fn w(&self, other: &Self) -> f64 {
@@ -112,7 +112,7 @@ impl Particle<DIM> for Ion {
     }
 
     fn dv(&self) -> Self::Point {
-        -Q_PLUS*self.z*self.point/(4.0*PI*self.point.norm_squared().powf(1.5))
+        -QF*self.z*self.point/(4.0*PI*self.point.norm_squared().powf(1.5))
     }
 
     fn dw (&self, other: &Self) -> Self::Point {
@@ -153,7 +153,7 @@ impl Particle<DIM> for Ion {
         if r > SIGMA {
             -self.z*other.z*delta/(4.0*PI*r.powi(3)) - self.z*other.z*delta/(4.0*PI*r*Self::R_SPLIT.powi(2))
         } else {
-            -self.z*other.z*delta/(4.0*PI*r*Self::R_SPLIT*SIGMA)
+            -self.z*other.z*delta/(4.0*PI*r*Self::R_SPLIT.powi(2))
         }
     }
 }
@@ -161,5 +161,15 @@ impl Particle<DIM> for Ion {
 impl Clone for Ion {
     fn clone(&self) -> Self {
         Ion {id: self.id, z: self.z, point: self.point.clone()}
+    }
+}
+
+impl Display for Ion {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        for (i, num) in <PointD as AsRef<[f64; DIM]>>::as_ref(&self.point).iter().enumerate() {
+            if i>0 { write!(f, ",")?; }
+            write!(f, "{}", num)?;
+        }
+        Ok(())
     }
 }

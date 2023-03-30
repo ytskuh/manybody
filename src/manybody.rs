@@ -135,7 +135,7 @@ impl<T: Particle<N> + Clone, const N:usize> Manybody<T, N> {
         let mut sum = 0f64;
         for j in 0..self.num {
             if j != i {
-                sum += xstar.w(xi) - self.particles[j].w(xi);
+                sum += xstar.w(&self.particles[j]) - xi.w(&self.particles[j]);
             }
         }
         let alpha = (-beta*omega*(xstar.v()-xi.v())-beta*omega*omega*sum).exp();
