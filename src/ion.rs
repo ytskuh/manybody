@@ -105,9 +105,9 @@ impl Particle<DIM> for Ion {
             return self.z*other.z/(4.0*PI*SIGMA) - r/Self::R_SPLIT*self.z*other.z/(4.0*PI*SIGMA);
         }
         if r > SIGMA {
-            self.z*other.z/(4.0*PI*r) - r/Self::R_SPLIT*self.z*other.z/(4.0*PI*Self::R_SPLIT)
+            self.z*other.z/(4.0*PI)*(1.0/r - r/Self::R_SPLIT.powi(2))
         } else {
-            self.z*other.z/(4.0*PI*SIGMA) - r/Self::R_SPLIT*self.z*other.z/(4.0*PI*Self::R_SPLIT)
+            self.z*other.z/(4.0*PI)*(1.0/SIGMA - r/Self::R_SPLIT.powi(2))
         }
     }
 
@@ -119,7 +119,7 @@ impl Particle<DIM> for Ion {
         let delta = self.point - other.point;
         let r = delta.norm();
         if r > SIGMA {
-            -self.z*other.z*delta/(4.0*PI*r.powi(3))
+            delta*(-self.z*other.z/(4.0*PI*r.powi(3)))
         } else {
             Self::zero_point()
         }
@@ -130,15 +130,15 @@ impl Particle<DIM> for Ion {
         let r = delta.norm();
         if r > Self::R_SPLIT {
             if r > SIGMA {
-                -self.z*other.z*delta/(4.0*PI*r.powi(3))
+                delta*(-self.z*other.z/(4.0*PI*r.powi(3)))
             } else {
                 Self::zero_point()
             }
         } else {
             if Self::R_SPLIT > SIGMA {
-                self.z*other.z*delta/(4.0*PI*r*Self::R_SPLIT.powi(2))
+                delta*(self.z*other.z/(4.0*PI*r*Self::R_SPLIT.powi(2)))
             } else {
-                self.z*other.z*delta/(4.0*PI*r*Self::R_SPLIT*SIGMA)
+                delta*(self.z*other.z/(4.0*PI*r*Self::R_SPLIT*SIGMA))
             }
         }
     }
@@ -148,12 +148,12 @@ impl Particle<DIM> for Ion {
         let r = delta.norm();
         if r > Self::R_SPLIT { return Self::zero_point() }
         if Self::R_SPLIT < SIGMA {
-            return -self.z*other.z*delta/(4.0*PI*r*Self::R_SPLIT*SIGMA)
+            return delta*(-self.z*other.z/(4.0*PI*r*Self::R_SPLIT*SIGMA))
         }
         if r > SIGMA {
-            -self.z*other.z*delta/(4.0*PI*r.powi(3)) - self.z*other.z*delta/(4.0*PI*r*Self::R_SPLIT.powi(2))
+            delta*(-(self.z*other.z/(4.0*PI)*(1.0/r.powi(3) + 1.0/r*Self::R_SPLIT.powi(2))))
         } else {
-            -self.z*other.z*delta/(4.0*PI*r*Self::R_SPLIT.powi(2))
+            delta*(-self.z*other.z/(4.0*PI*r*Self::R_SPLIT.powi(2)))
         }
     }
 }
