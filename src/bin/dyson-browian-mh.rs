@@ -21,8 +21,7 @@ fn main() {
     let args = Args::parse();
     let particle_num = args.particle_num;
     let step_num = args.iterations;
-    let beta = (particle_num as f64 - 1.0).powi(2);
-    let omega = 1.0/(particle_num as f64 - 1.0);
+
     let filename = &args.output;
 
     let mut rng = rand::thread_rng();
@@ -34,13 +33,13 @@ fn main() {
             point: DBParticle::standard_uni(&mut rng)
         });
     }
-    let mut particle_system = Manybody::new(particle_initial, rng);
+    let mut particle_system = Manybody::new(particle_initial, rng, 0.0, 0, 0, particle_num as f64 - 1.0, 1.0, 1.0, 0.0);
 
     write_to_file("x", filename).unwrap();
     append_vec_to_file(particle_system.particles(), filename).unwrap();
 
     for i in 0..step_num {
-        particle_system.mh(beta, omega);
+        particle_system.mh();
         if (i%particle_num as u32) == 0 {
             append_vec_to_file(particle_system.particles(), filename).unwrap();
         }

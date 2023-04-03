@@ -42,25 +42,40 @@ pub trait Particle<const N:usize> {
     fn dw2  (&self, other: &Self)   -> Self::Point;
 }
 
+struct ManybodyParam {
+    dt: f64,
+    p: usize,
+    m: usize,
+    c1: f64,
+    c2: f64,
+    std: f64,
+    c3:f64
+}
+
 pub struct Manybody<T: Particle<DIM>, const DIM:usize> {
     num: usize,
     particles: Vec<T>,
     kdtree: KdTree<f64, usize, DIM>,
     rng: ThreadRng,
+    param: ManybodyParam,
+
     pub count: usize
 }
 
 impl<T: Particle<N> + Clone, const N:usize> Manybody<T, N> {
-    pub fn new(particles: Vec<T>, rng: ThreadRng) -> Self {
+    pub fn new(particles: Vec<T>, rng: ThreadRng, dt: f64, p: usize, m: usize, c1: f64, c2: f64, std: f64, c3: f64) -> Self {
         let mut kdtree = KdTree::new();
         for particle in particles.iter() {
             kdtree.add(particle.point().as_aref(), particle.id()).unwrap();
         }
+        let param = ManybodyParam {dt, p, m, c1, c2, std, c3};
+
         Manybody { 
             num: particles.len(),
             particles,
             kdtree,
             rng,
+            param,
             count: 0
         }
     }
@@ -69,29 +84,26 @@ impl<T: Particle<N> + Clone, const N:usize> Manybody<T, N> {
         &self.particles
     }
 
-    fn rbmc_step1(&mut self, xi: T, dt: f64, p:usize, std: f64, a: f64) -> T {
+    fn rbmc_step1(&mut self, xi: T) -> T {
         let mut sum = T::zero_point();
         let range: Vec<usize> = (0..self.num-1).collect();
-        for xeta_rawindex in range.choose_multiple(&mut self.rng, p-1) {
+        for xeta_rawindex in range.choose_multiple(&mut self.rng, self.param.p-1) {
             if *xeta_rawindex < xi.id() {
                 sum += xi.dw1(&self.particles[*xeta_rawindex]);
             } else {
                 sum += xi.dw1(&self.particles[*xeta_rawindex+1]);
             }
         }
-        T::new_position(&xi, &T::reflection(&(xi.point() - (xi.dv()/a+sum/(p-1) as f64)*dt + T::standard_normal(&mut self.rng) * std)))
+        T::new_position(&xi, &T::reflection(&(xi.point() - (xi.dv()*self.param.c1+sum/(self.param.p-1) as f64*self.param.c2)*self.param.dt + T::standard_normal(&mut self.rng) * self.param.std * (2.0*self.param.dt).sqrt())))
     }
 
-    pub fn rbmc (
-        &mut self, dt: f64, beta: f64, omega: f64, p: usize, m: usize
-    ) -> &T
+    pub fn rbmc (&mut self) -> &T
     {
         let i = self.rng.gen_range(0..self.num);
-        let a = omega*(self.num as f64 - 1.0);
-        let std = (2.0*dt / ((self.num as f64 - 1.0)*omega*omega*beta)).sqrt();
+
         let mut xstar = self.particles[i].clone();
-        for _ in 0..m {
-            xstar = self.rbmc_step1(xstar, dt, p, std, a);
+        for _ in 0..self.param.m {
+            xstar = self.rbmc_step1(xstar);
         }
 
         let mut sum = 0f64;
@@ -117,7 +129,7 @@ impl<T: Particle<N> + Clone, const N:usize> Manybody<T, N> {
             }
         }
 
-        let alpha = (-beta*omega*omega*sum).exp();
+        let alpha = (-self.param.c3*sum).exp();
         let zeta = self.rng.gen_range(0.0..1.0);
         if zeta < alpha {
             self.kdtree.remove(&self.particles[i].point().as_aref(), &i).unwrap();
@@ -128,17 +140,17 @@ impl<T: Particle<N> + Clone, const N:usize> Manybody<T, N> {
         &self.particles[i]
     }
 
-    pub fn mh(&mut self, beta: f64, omega: f64) -> &T {
+    pub fn mh(&mut self) -> &T {
         let i = self.rng.gen_range(0..self.num);
         let xi = &self.particles[i];
-        let xstar = T::new_position(xi, &(xi.point()+T::standard_normal(&mut self.rng)));
+        let xstar = T::new_position(xi, &(xi.point()+T::standard_normal(&mut self.rng)*self.param.std));
         let mut sum = 0f64;
         for j in 0..self.num {
             if j != i {
                 sum += xstar.w(&self.particles[j]) - xi.w(&self.particles[j]);
             }
         }
-        let alpha = (-beta*omega*(xstar.v()-xi.v())-beta*omega*omega*sum).exp();
+        let alpha = (-self.param.c1*(xstar.v()-xi.v())-self.param.c2*sum).exp();
         let zeta = self.rng.gen_range(0.0..1.0);
 //        println!("{}", zeta < alpha);
         if zeta <= alpha {

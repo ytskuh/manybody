@@ -28,10 +28,11 @@ impl AsArrRef<DIM> for PointD {
 pub static Q_PLUS: f64 = 10.0;
 pub static QF: f64 = 10.0;
 const R: f64 = 1.0;
+const V: f64 = 0.1;
 
 pub static N_PLUS: usize = 100;
 pub static N_NEGA: usize = 200;
-const R_C: f64 = 1.0;
+const R_C: f64 = 0.3;
 static SIGMA: f64 = 0.1493;
 
 const R2: f64 = R*R;
@@ -64,20 +65,21 @@ impl Particle<DIM> for Ion {
 
     fn reflection(point: &Self::Point) -> Self::Point {
         let r2 = point.norm_squared();
-        if r2 > R2 { point.clone() } 
-        else { point*(R2/r2) }
+        if r2 < R2 {point*(R2/r2)}
+        else if r2 > 10.0_f64.powi(2) { point*(10.0_f64.powi(2)/r2) }
+        else {point.clone()}
     }
 
     fn v(&self) -> f64 {
-        self.z*QF/(4.0*PI*self.point.norm())
+        self.z*QF/(4.0*PI*self.point.norm())/V
     }
 
     fn w(&self, other: &Self) -> f64 {
         let r = (self.point-other.point).norm();
         if r > SIGMA {
-            self.z*other.z/(4.0*PI*r) 
+            self.z*other.z/(4.0*PI*r)/V
         } else {
-            self.z*other.z/(4.0*PI*SIGMA)
+            self.z*other.z/(4.0*PI*SIGMA)/V
         }
     }
 
@@ -85,15 +87,15 @@ impl Particle<DIM> for Ion {
         let r = (self.point-other.point).norm();
         if r > Self::R_SPLIT {
             if r > SIGMA {
-                self.z*other.z/(4.0*PI*r) 
+                self.z*other.z/(4.0*PI*r)/V
             } else {
-                self.z*other.z/(4.0*PI*SIGMA)
+                self.z*other.z/(4.0*PI*SIGMA)/V
             }
         } else {
             if Self::R_SPLIT > SIGMA {
-                r/Self::R_SPLIT*self.z*other.z/(4.0*PI*Self::R_SPLIT)
+                r/Self::R_SPLIT*self.z*other.z/(4.0*PI*Self::R_SPLIT)/V
             } else {
-                r/Self::R_SPLIT*self.z*other.z/(4.0*PI*SIGMA)
+                r/Self::R_SPLIT*self.z*other.z/(4.0*PI*SIGMA)/V
             }
         }
     }
@@ -102,24 +104,24 @@ impl Particle<DIM> for Ion {
         let r = (self.point-other.point).norm();
         if r > Self::R_SPLIT { return 0.0; }
         if Self::R_SPLIT < SIGMA {
-            return self.z*other.z/(4.0*PI*SIGMA) - r/Self::R_SPLIT*self.z*other.z/(4.0*PI*SIGMA);
+            return (self.z*other.z/(4.0*PI*SIGMA) - r/Self::R_SPLIT*self.z*other.z/(4.0*PI*SIGMA))/V;
         }
         if r > SIGMA {
-            self.z*other.z/(4.0*PI)*(1.0/r - r/Self::R_SPLIT.powi(2))
+            (self.z*other.z/(4.0*PI)*(1.0/r - r/Self::R_SPLIT.powi(2)))/V
         } else {
-            self.z*other.z/(4.0*PI)*(1.0/SIGMA - r/Self::R_SPLIT.powi(2))
+            (self.z*other.z/(4.0*PI)*(1.0/SIGMA - r/Self::R_SPLIT.powi(2)))/V
         }
     }
 
     fn dv(&self) -> Self::Point {
-        -QF*self.z*self.point/(4.0*PI*self.point.norm_squared().powf(1.5))
+        self.point*(-QF*self.z/(4.0*PI*self.point.norm_squared().powf(1.5))/V)
     }
 
     fn dw (&self, other: &Self) -> Self::Point {
         let delta = self.point - other.point;
         let r = delta.norm();
         if r > SIGMA {
-            delta*(-self.z*other.z/(4.0*PI*r.powi(3)))
+            delta*(-self.z*other.z/(4.0*PI*r.powi(3))/V)
         } else {
             Self::zero_point()
         }
@@ -130,15 +132,15 @@ impl Particle<DIM> for Ion {
         let r = delta.norm();
         if r > Self::R_SPLIT {
             if r > SIGMA {
-                delta*(-self.z*other.z/(4.0*PI*r.powi(3)))
+                delta*(-self.z*other.z/(4.0*PI*r.powi(3))/V)
             } else {
                 Self::zero_point()
             }
         } else {
             if Self::R_SPLIT > SIGMA {
-                delta*(self.z*other.z/(4.0*PI*r*Self::R_SPLIT.powi(2)))
+                delta*(self.z*other.z/(4.0*PI*r*Self::R_SPLIT.powi(2))/V)
             } else {
-                delta*(self.z*other.z/(4.0*PI*r*Self::R_SPLIT*SIGMA))
+                delta*(self.z*other.z/(4.0*PI*r*Self::R_SPLIT*SIGMA)/V)
             }
         }
     }
@@ -148,12 +150,12 @@ impl Particle<DIM> for Ion {
         let r = delta.norm();
         if r > Self::R_SPLIT { return Self::zero_point() }
         if Self::R_SPLIT < SIGMA {
-            return delta*(-self.z*other.z/(4.0*PI*r*Self::R_SPLIT*SIGMA))
+            return delta*(-self.z*other.z/(4.0*PI*r*Self::R_SPLIT*SIGMA)/V)
         }
         if r > SIGMA {
-            delta*(-(self.z*other.z/(4.0*PI)*(1.0/r.powi(3) + 1.0/r*Self::R_SPLIT.powi(2))))
+            delta*(-(self.z*other.z/(4.0*PI)*(1.0/r.powi(3) + 1.0/r*Self::R_SPLIT.powi(2)))/V)
         } else {
-            delta*(-self.z*other.z/(4.0*PI*r*Self::R_SPLIT.powi(2)))
+            delta*(-self.z*other.z/(4.0*PI*r*Self::R_SPLIT.powi(2))/V)
         }
     }
 }

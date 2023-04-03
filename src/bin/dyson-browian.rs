@@ -57,19 +57,15 @@ fn main() {
             point: DBParticle::standard_normal(&mut rng)
         });
     }
-    let mut particle_system = Manybody::new(particle_initial, rng);
-
-    let dt = step_time;
-    let beta = (particle_num as f64 - 1.0).powi(2);
-    let omega = 1.0/(particle_num as f64 - 1.0);
+    let mut particle_system = Manybody::new(particle_initial, rng, step_time, p, m, 1.0, 1.0/(particle_num as f64 - 1.0), 1.0/(particle_num as f64 - 1.0).sqrt(), 1.0);
 
     for _ in 0..burn_in {
-        particle_system.rbmc(dt, beta, omega, p, m);
+        particle_system.rbmc();
     }
     if args.raw {
         write_to_file("x", filename).unwrap();
         for _ in burn_in..iteration {
-            let x = particle_system.rbmc(dt, beta, omega, p, m);
+            let x = particle_system.rbmc();
             append_to_file(x.point(), filename).unwrap();
         }
     } else {
@@ -78,7 +74,7 @@ fn main() {
         let s = args.interval_num.unwrap();
         let mut hist = Histogram::new(&[l], &[h], &[s]);
         for _ in burn_in..iteration {
-            let x = particle_system.rbmc(dt, beta, omega, p, m);
+            let x = particle_system.rbmc();
             hist.add(x.point().as_aref());
         }
         write_to_file(hist.hist_density(), filename).unwrap();

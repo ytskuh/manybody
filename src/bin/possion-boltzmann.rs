@@ -16,8 +16,6 @@ fn main() {
 
     let particle_num = N_PLUS + N_NEGA;
     let dt = 0.01;
-    let beta = particle_num as f64 - 1.0;
-    let omega = 1.0/(particle_num as f64 - 1.0);
     let p = 2;
     let m = 9;
 
@@ -28,20 +26,20 @@ fn main() {
         ions.push(Ion {id: i, z: q_nega, point: point_initialize(&mut rng)});
     }
 
-    let mut particle_system = Manybody::new(ions, rng);
+    let mut particle_system = Manybody::new(ions, rng, dt, p, m, 1.0, particle_num as f64 - 1.0, 1.0, 1.0);
     let nb: usize = 6000000;
     let ne: usize = 10000000;
     for _ in 0..nb {
-        particle_system.rbmc(dt, beta, omega, p, m);
+        particle_system.rbmc();
     }
 
-    let histrange = (0.0, 100.0);
-    let bins_num = 100;
+    let histrange = (0.0, 10.0);
+    let bins_num = 30;
 
     let mut hist1 = Histogram::new(&[histrange.0], &[histrange.1], &[bins_num]);
     let mut hist2 = Histogram::new(&[histrange.0], &[histrange.1], &[bins_num]);
     for _ in nb..ne {
-        let x = particle_system.rbmc(dt, beta, omega, p, m);
+        let x = particle_system.rbmc();
         if x.z > 0.0 {
             hist1.add(&[x.point.norm()]);
         } else {
