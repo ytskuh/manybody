@@ -30,7 +30,7 @@ pub trait Particle<const N:usize> {
     fn point (&self) -> Self::Point;
     fn new_position (&self, point: &Self::Point) -> Self;
 
-    fn reflection (point: &Self::Point) -> Self::Point;
+    fn available (&self) -> bool;
     fn v    (&self)                 -> f64;
     fn w    (&self, other: &Self)   -> f64;
     fn w1   (&self, other: &Self)   -> f64;
@@ -87,14 +87,25 @@ impl<T: Particle<N> + Clone, const N:usize> Manybody<T, N> {
     fn rbmc_step1(&mut self, xi: T) -> T {
         let mut sum = T::zero_point();
         let range: Vec<usize> = (0..self.num-1).collect();
-        for xeta_rawindex in range.choose_multiple(&mut self.rng, self.param.p-1) {
+        for xeta_rawindex in
+        range.choose_multiple(&mut self.rng, self.param.p-1) {
             if *xeta_rawindex < xi.id() {
                 sum += xi.dw1(&self.particles[*xeta_rawindex]);
             } else {
                 sum += xi.dw1(&self.particles[*xeta_rawindex+1]);
             }
         }
-        T::new_position(&xi, &T::reflection(&(xi.point() - (xi.dv()*self.param.c1+sum/(self.param.p-1) as f64*self.param.c2)*self.param.dt + T::standard_normal(&mut self.rng) * self.param.std * (2.0*self.param.dt).sqrt())))
+        T::new_position(&xi, 
+            &(
+                xi.point() 
+                - (
+                    xi.dv()*self.param.c1
+                    +sum/(self.param.p-1) as f64*self.param.c2
+                )*self.param.dt
+                + T::standard_normal(&mut self.rng) 
+                * self.param.std * (2.0*self.param.dt).sqrt()
+            )
+        )
     }
 
     pub fn rbmc (&mut self) -> &T
@@ -131,7 +142,7 @@ impl<T: Particle<N> + Clone, const N:usize> Manybody<T, N> {
 
         let alpha = (-self.param.c3*sum).exp();
         let zeta = self.rng.gen_range(0.0..1.0);
-        if zeta < alpha {
+        if zeta < alpha && xstar.available() {
             self.kdtree.remove(&self.particles[i].point().as_aref(), &i).unwrap();
             self.particles[i]=xstar;
             self.kdtree.add(self.particles[i].point().as_aref(), i).unwrap();
@@ -153,7 +164,7 @@ impl<T: Particle<N> + Clone, const N:usize> Manybody<T, N> {
         let alpha = (-self.param.c1*(xstar.v()-xi.v())-self.param.c2*sum).exp();
         let zeta = self.rng.gen_range(0.0..1.0);
 //        println!("{}", zeta < alpha);
-        if zeta <= alpha {
+        if zeta <= alpha && xstar.available() {
             self.particles[i]=xstar;
             self. count +=1;
         }

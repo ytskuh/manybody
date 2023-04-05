@@ -69,8 +69,8 @@ impl Particle<DIM> for DBParticle {
         DBParticle {id: self.id, point: point.clone()}
     }
 
-    fn reflection (point: &PointD) -> Self::Point {
-        point.clone()
+    fn available (&self) -> bool {
+        true
     }
 
     fn v(&self) -> f64 {

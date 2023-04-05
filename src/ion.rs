@@ -25,13 +25,11 @@ impl AsArrRef<DIM> for PointD {
     }
 }
 
-pub static Q_PLUS: f64 = 10.0;
+
 pub static QF: f64 = 10.0;
 const R: f64 = 1.0;
 const V: f64 = 0.1;
 
-pub static N_PLUS: usize = 100;
-pub static N_NEGA: usize = 200;
 const R_C: f64 = 0.3;
 static SIGMA: f64 = 0.1493;
 
@@ -63,11 +61,10 @@ impl Particle<DIM> for Ion {
         self.point.norm()
     }
 
-    fn reflection(point: &Self::Point) -> Self::Point {
-        let r2 = point.norm_squared();
-        if r2 < R2 {point*(R2/r2)}
-        else if r2 > 10.0_f64.powi(2) { point*(10.0_f64.powi(2)/r2) }
-        else {point.clone()}
+    fn available (&self) -> bool {
+        let r2 = self.point.norm_squared();
+        if r2 > R2 && r2 < 100.0 { true }
+        else { false }
     }
 
     fn v(&self) -> f64 {

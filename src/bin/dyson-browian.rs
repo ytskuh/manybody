@@ -57,7 +57,7 @@ fn main() {
             point: DBParticle::standard_normal(&mut rng)
         });
     }
-    let mut particle_system = Manybody::new(particle_initial, rng, step_time, p, m, 1.0, 1.0/(particle_num as f64 - 1.0), 1.0/(particle_num as f64 - 1.0).sqrt(), 1.0);
+    let mut particle_system = Manybody::new(particle_initial, rng, step_time, p, m, 1.0, 1.0, 1.0/(particle_num as f64 - 1.0).sqrt(), 1.0);
 
     for _ in 0..burn_in {
         particle_system.rbmc();

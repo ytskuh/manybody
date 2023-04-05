@@ -14,13 +14,13 @@ struct Args {
     particle_num: usize,
 
     #[arg(long)]
-    iterations: u32,
+    iteration: u32,
 }
 
 fn main() {
     let args = Args::parse();
     let particle_num = args.particle_num;
-    let step_num = args.iterations;
+    let step_num = args.iteration;
 
     let filename = &args.output;
 

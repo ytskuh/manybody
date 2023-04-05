@@ -1,5 +1,5 @@
 use manybody::manybody::{Particle, Manybody};
-use manybody::ion::{Ion, DIM, N_NEGA, N_PLUS, Q_PLUS, QF};
+use manybody::ion::{Ion, DIM, QF};
 use manybody::data::*;
 
 fn point_initialize(rng: &mut rand::rngs::ThreadRng)
@@ -12,10 +12,13 @@ fn main() {
     let mut ions = Vec::new();
     let mut rng = rand::thread_rng();
 
+    static N_PLUS: usize = 100;
+    static N_NEGA: usize = 200;
+    static Q_PLUS: f64 = 10.0;
+
     let q_plus = Q_PLUS/N_PLUS as f64;
     let q_nega = -(QF+Q_PLUS)/N_NEGA as f64;
 
-    let particle_num = N_PLUS + N_NEGA;
     let dt = 0.01;
     let beta = 1.0;
     let omega = 1.0;
