@@ -1,3 +1,4 @@
 /target
 /__pycache__
 /lab-dbn/*.txt
+*.png
