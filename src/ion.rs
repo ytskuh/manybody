@@ -31,7 +31,7 @@ const R: f64 = 1.0;
 const V: f64 = 0.1;
 
 const R_C: f64 = 0.3;
-static SIGMA: f64 = 0.1493;
+static SIGMA: f64 = 0.014;
 
 const R2: f64 = R*R;
 
@@ -63,7 +63,7 @@ impl Particle<DIM> for Ion {
 
     fn available (&self) -> bool {
         let r2 = self.point.norm_squared();
-        if r2 > R2 && r2 < 100.0 { true }
+        if r2 > R2 { true }
         else { false }
     }
 
@@ -101,7 +101,7 @@ impl Particle<DIM> for Ion {
         let r = (self.point-other.point).norm();
         if r > Self::R_SPLIT { return 0.0; }
         if Self::R_SPLIT < SIGMA {
-            return (self.z*other.z/(4.0*PI*SIGMA) - r/Self::R_SPLIT*self.z*other.z/(4.0*PI*SIGMA))/V;
+            return self.z*other.z/(4.0*PI*SIGMA) * (1.0 - r/Self::R_SPLIT)/V;
         }
         if r > SIGMA {
             (self.z*other.z/(4.0*PI)*(1.0/r - r/Self::R_SPLIT.powi(2)))/V

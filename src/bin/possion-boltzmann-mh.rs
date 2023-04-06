@@ -31,13 +31,13 @@ fn main() {
     }
 
     let mut particle_system = Manybody::new(ions, rng, dt, 0, 0, beta*omega, beta*omega*omega, 1.0, 0.0);
-    let nb: usize = 6000000;
-    let ne: usize = 10000000;
+    let nb: usize = 16000000;
+    let ne: usize = 20000000;
     for _ in 0..nb {
         particle_system.mh();
     }
 
-    let histrange = (0.0, 10.0);
+    let histrange = (0.0, 20.0);
     let bins_num = 100;
 
     let mut hist1 = Histogram::new(&[histrange.0], &[histrange.1], &[bins_num]);
