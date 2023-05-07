@@ -7,7 +7,7 @@ use clap::Parser;
 fn point_initialize(rng: &mut rand::rngs::ThreadRng)
 -> <Ion as Particle<DIM>>::Point {
     let x = Ion::standard_normal(rng);
-    x*(10.0+1.0/x.norm())
+    x*(1.0+1.0/x.norm())
 }
 
 #[derive(Parser, Debug)]
@@ -65,7 +65,7 @@ fn main() {
             hist2.add(&[x.point.norm()]);
         }
     }
-    println!("{}", hist1.hist());
-    println!("{}", hist2.hist());
+    println!("{}", hist1.hist_density());
+    println!("{}", hist2.hist_density());
     println!("{}", particle_system.count);
 }

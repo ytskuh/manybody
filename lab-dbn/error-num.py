@@ -36,7 +36,7 @@ def execute(num):
             "burn-in": str(40000*num)
         }
     )
-#    os.system(command)
+    os.system(command)
     with open(filename, 'r') as f:
         data_str = f.read()
     data_list = data_str.strip().rstrip(']').lstrip('[').split(',')
@@ -62,3 +62,8 @@ plt.ylabel(r'$L_1$-divergence')
 plt.savefig('lab-dbn/result5.png')
 plt.plot()
 
+X = np.log(np.array(num_list)).reshape(-1, 1)
+Y = np.log(np.array(error))
+from sklearn.linear_model import LinearRegression
+reg = LinearRegression().fit(X,Y)
+print(reg.coef_)

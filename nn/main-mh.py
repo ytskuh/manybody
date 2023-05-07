@@ -21,7 +21,7 @@ class nnm(nn.Module):
         return output/self.width
     
     def activated(self, x):
-        return self.output_layer.weight.data.reshape(-1)*torch.sigmoid(self.hidden_layer(x))
+        return self.output_layer.weight.data.reshape(-1)*torch.sigmoid(self.hidden_layer(x)).data
     
 WIDTH = 64
 
@@ -29,23 +29,23 @@ net = nnm(WIDTH)
 net.to(dev)
 
 #%%
-NUM_DATA = 100000
+NUM_DATA = 1000000
 DELTA = 0.5
-y_train = (torch.rand(NUM_DATA, device=dev).round()*2-1).unsqueeze(1)
-x_train = torch.randn((NUM_DATA, DIM), device=dev)*(1+DELTA)*(y_train==1) + torch.randn((NUM_DATA, DIM), device=dev)*(1-DELTA)*(y_train==-1)
+x_train = torch.rand(NUM_DATA, device=dev).unsqueeze(1)
+y_train = torch.sin(3*x_train)+torch.randn(NUM_DATA, device=dev).unsqueeze(1)*0.2
 
 # %%
-a = 1
+a = 0.1
 beta = 1
 hidden_layer_weight = []
 hidden_layer_bias = []
 output_layer_weight = []
-BURN_IN = 50000
+BURN_IN = 990000
 
-for i in range(NUM_DATA-20):
+for i in range(NUM_DATA):
     x = x_train[i]
-    y = y_train[i:i+20]
-    ax = net.activated(x).data.clone()
+    y = y_train[i]
+    ax = net.activated(x).clone()
 
     rand1 = torch.randn(WIDTH, DIM, device=dev)*a
     rand2 = torch.randn(WIDTH, device=dev)*a
@@ -54,9 +54,9 @@ for i in range(NUM_DATA-20):
     net.hidden_layer.weight.data += rand1
     net.hidden_layer.bias.data += rand2
     net.output_layer.weight.data += rand3
-    ax_new = net.activated(x).data
+    ax_new = net.activated(x)
 
-    alpha=torch.exp(-beta * (-2/WIDTH*(y.reshape(-1)*(ax_new.sum(axis=-1)-ax.sum(axis=-1))).mean() + 1/(2*WIDTH**2)*(ax_new.pow(2).sum(axis=-1)-ax.pow(2).sum(axis=-1)).mean() + 1/(2*WIDTH**2)*((ax_new.reshape(20, 1, -1)*ax_new.reshape(20, -1, 1)).sum(axis=(-1, -2))-(ax.reshape(20, 1, -1)*ax.reshape(20, -1, 1)).sum(axis=(-1, -2))).mean()))
+    alpha=torch.exp(-beta * (-2/WIDTH*y*(ax_new.sum()-ax.sum())+1/(2*WIDTH**2)*(ax_new.pow(2).sum()-ax.pow(2).sum())+1/(2*WIDTH**2)*((ax_new*ax_new.reshape(-1, 1)).sum()-(ax*ax.reshape(-1, 1)).sum())))
 
     t = random.random()
     if t > alpha:
@@ -76,9 +76,9 @@ net_mean.hidden_layer.weight.data = torch.cat(hidden_layer_weight, dim=0)
 net_mean.hidden_layer.bias.data = torch.cat(hidden_layer_bias, dim=0)
 net_mean.output_layer.weight.data = torch.cat(output_layer_weight, dim=1)
 # %%
-x_test = torch.linspace(-6, 6, 100, device=dev).unsqueeze(1)
+x_test = torch.linspace(-0, 1, 100, device=dev).unsqueeze(1)
 y_pred = net_mean(x_test)
-plt.scatter(x_train.cpu(), y_train.cpu())
+plt.scatter(x_train.cpu()[0:300], y_train.cpu()[0:300], s=1)
 plt.plot(x_test.cpu(), y_pred.detach().cpu())
 plt.show()
 # %%

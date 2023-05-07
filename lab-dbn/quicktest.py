@@ -18,7 +18,7 @@ sys.path.append(top)
 import wrapper
 
 bin_range = (-2, 2)
-bin_num = 100
+bin_num = 40
 
 def execute1(num):
     filename = f"lab-dbn/dyson-browian-{str(num)}.txt"
@@ -28,8 +28,8 @@ def execute1(num):
             "output": filename,
             "particle-num": str(num),
             "iteration": str(80000*num),
-            "step-time": "0.00001",
-            "p": "4",
+            "step-time": "0.0001",
+            "p": "2",
             "low": str(bin_range[0]),
             "high": str(bin_range[1]),
             "interval-num": str(bin_num),
@@ -53,7 +53,7 @@ def execute2(num):
             "iteration": str(80000*num),
         }
     )
-    os.system(command)
+#    os.system(command)
     data = pl.read_csv(filename)
     return data.to_numpy()
 
@@ -68,10 +68,17 @@ counts = execute1(100)
 x = execute2(100)
 counts2, bins = np.histogram(x, density=True, bins=bin_num, range = bin_range)
 
-plt.stairs(counts, bins)
-plt.stairs(counts2, bins)
+
 X = np.linspace(-np.sqrt(2) , np.sqrt(2), 100)
 Y = np.sqrt(2-X**2)/np.pi
-plt.plot(X, Y)
-plt.xlim((-2, 2))
-plt.show()
+fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(10, 5), sharey=True)
+ax1.stairs(counts, bins, label='RBMC')
+ax1.plot(X, Y, label='limit')
+ax1.set_title('RBMC vs limit')
+ax2.stairs(counts2, bins, label='MH')
+ax2.plot(X, Y, label='limit')
+ax2.set_title('MH vs limit')
+ax1.set_xlim((-2, 2))
+ax2.set_xlim((-2, 2))
+fig.savefig('testresult.png')
+fig.show()

@@ -28,7 +28,7 @@ impl AsArrRef<DIM> for PointD {
 
 pub static QF: f64 = 10.0;
 const R: f64 = 1.0;
-const V: f64 = 0.1;
+const V: f64 = 1.0;
 
 const R_C: f64 = 0.3;
 static SIGMA: f64 = 0.014;
@@ -63,7 +63,7 @@ impl Particle<DIM> for Ion {
 
     fn available (&self) -> bool {
         let r2 = self.point.norm_squared();
-        if r2 > R2 { true }
+        if r2 > R2 && r2 < 100.0 { true }
         else { false }
     }
 
