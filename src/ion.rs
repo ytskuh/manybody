@@ -1,8 +1,9 @@
 use nalgebra::SVector;
+use rand::Rng;
 use std::{fmt::Display, f64::consts::PI};
 use rand_distr::{StandardNormal, Uniform};
 
-use crate::manybody::{AsArrRef, Particle};
+use crate::manybody::Particle;
 
 pub const DIM: usize = 3;
 
@@ -19,19 +20,12 @@ impl PartialEq for Ion {
     fn ne(&self, other: &Self) -> bool { self.id != other.id }
 }
 
-impl AsArrRef<DIM> for PointD {
-    fn as_aref(&self) -> &[f64; DIM] {
-        &self.data.0[0]
-    }
-}
-
-
-pub static QF: f64 = 10.0;
+pub static QF: f64 = 0.1;
 const R: f64 = 1.0;
-const V: f64 = 1.0;
+const V: f64 = 0.01;
 
 const R_C: f64 = 0.3;
-static SIGMA: f64 = 0.014;
+static SIGMA: f64 = 0.31;
 
 const R2: f64 = R*R;
 
@@ -49,7 +43,7 @@ impl Particle<DIM> for Ion {
 
     fn zero_point() -> Self::Point { PointD::zeros() }
 
-    fn standard_normal(rng: &mut rand::rngs::ThreadRng) -> Self::Point {
+    fn standard_normal<R: Rng>(rng: &mut R) -> Self::Point {
         PointD::from_distribution(&StandardNormal, rng)
     }
 

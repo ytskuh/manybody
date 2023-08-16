@@ -19,7 +19,6 @@ fn main() {
     let q_plus = Q_PLUS/N_PLUS as f64;
     let q_nega = -(QF+Q_PLUS)/N_NEGA as f64;
 
-    let dt = 0.01;
     let beta = 1.0;
     let omega = 1.0;
 
@@ -30,14 +29,14 @@ fn main() {
         ions.push(Ion {id: i, z: q_nega, point: point_initialize(&mut rng)});
     }
 
-    let mut particle_system = Manybody::new(ions, rng, dt, 0, 0, beta*omega, beta*omega*omega, 1.0, 0.0);
+    let mut particle_system = Manybody::new(ions, rng, 0.0, 0, 0, beta*omega, beta*omega*omega, 1.0, 0.0);
     let nb: usize = 16000000;
     let ne: usize = 20000000;
     for _ in 0..nb {
         particle_system.mh();
     }
 
-    let histrange = (0.0, 20.0);
+    let histrange = (0.0, 10.0);
     let bins_num = 100;
 
     let mut hist1 = Histogram::new(&[histrange.0], &[histrange.1], &[bins_num]);

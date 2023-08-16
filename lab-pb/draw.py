@@ -14,8 +14,8 @@ top = os.path.dirname(
     )
 )
 sys.path.append(top)
-bin_range=(0.0, 20.0)
-bin_num = 40
+bin_range=(0.0, 10.0)
+bin_num = 20
 
 result = subprocess.run([
     "target/release/possion-boltzmann",
@@ -36,6 +36,6 @@ bins = np.linspace(bin_range[0], bin_range[1], bin_num+1)
 
 c /= 4*pi/3*(bins[1:]**3 - bins[:-1]**3)
 d /= 4*pi/3*(bins[1:]**3 - bins[:-1]**3)
-plt.stairs(c/2, bins)
-plt.stairs(d, bins)
+plt.stairs(c*100, bins)
+plt.stairs(d*101, bins)
 plt.show()

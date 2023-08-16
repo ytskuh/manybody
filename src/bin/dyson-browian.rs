@@ -1,6 +1,6 @@
 use clap::Parser;
 
-use manybody::manybody::{Particle, Manybody, AsArrRef};
+use manybody::manybody::{Particle, Manybody};
 use manybody::dbparticle::DBParticle;
 use manybody::data::*;
 
@@ -66,7 +66,7 @@ fn main() {
         write_to_file("x", filename).unwrap();
         for _ in burn_in..iteration {
             let x = particle_system.rbmc();
-            append_to_file(x.point(), filename).unwrap();
+            append_to_file(x, filename).unwrap();
         }
     } else {
         let l = args.low.unwrap();
@@ -75,7 +75,7 @@ fn main() {
         let mut hist = Histogram::new(&[l], &[h], &[s]);
         for _ in burn_in..iteration {
             let x = particle_system.rbmc();
-            hist.add(x.point().as_aref());
+            hist.add(x.point().as_ref());
         }
         write_to_file(hist.hist_density(), filename).unwrap();
     }

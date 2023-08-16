@@ -6,11 +6,11 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-nalgebra = { version = "0.32.1", features = [ "rand" ] }
+nalgebra = { version = "0.32.3", features = [ "rand" ] }
 rand = "0.8.5"
 rand_distr = "0.4.3"
-kiddo = "0.2.5"
+kiddo = "2.1.1"
 approx = "0.5.1"
-clap = { version = "4.1.6", features = ["derive"] }
+clap = { version = "4.3.11", features = ["derive"] }
 ndarray = "0.15.6"
-serde = { version = "1.0.155", features = ["derive"] }
+serde = { version = "1.0.171", features = ["derive"] }

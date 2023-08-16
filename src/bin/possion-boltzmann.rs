@@ -2,9 +2,11 @@ use manybody::manybody::{Particle, Manybody};
 use manybody::ion::{Ion, DIM, QF};
 use manybody::data::*;
 
+use rand::{SeedableRng, Rng};
+
 use clap::Parser;
 
-fn point_initialize(rng: &mut rand::rngs::ThreadRng)
+fn point_initialize<R: Rng>(rng: &mut R)
 -> <Ion as Particle<DIM>>::Point {
     let x = Ion::standard_normal(rng);
     x*(1.0+1.0/x.norm())
@@ -23,16 +25,18 @@ struct Args {
 
 fn main() {
     let mut ions = Vec::new();
-    let mut rng = rand::thread_rng();
-    static N_PLUS: usize = 100000;
-    static N_NEGA: usize = 200000;
+    let seed: [u8; 32] = [0; 32];
+    let mut rng = rand::rngs::StdRng::from_seed(seed);
+    static N_PLUS: usize = 16;
+    static N_NEGA: usize = 17;
     static Q_PLUS: f64 = 10.0;
 
     let q_plus = Q_PLUS/N_PLUS as f64;
     let q_nega = -(QF+Q_PLUS)/N_NEGA as f64;
+    let q = q_plus;
 
     let particle_num = N_PLUS + N_NEGA;
-    let dt = 0.1;
+    let dt = 0.0001;
     let p = 2;
     let m = 9;
     for i in 0..N_PLUS {
@@ -42,9 +46,9 @@ fn main() {
         ions.push(Ion {id: i, z: q_nega, point: point_initialize(&mut rng)});
     }
 
-    let mut particle_system = Manybody::new(ions, rng, dt, p, m, 1.0, particle_num as f64 - 1.0, 1.0, 1.0);
-    let nb: usize = 160000;
-    let ne: usize = 200000;
+    let mut particle_system = Manybody::new(ions, rng, dt, p, m, 1.0/q, (particle_num as f64 - 1.0)/q, 1.0, 1.0/q);
+    let nb: usize = 160000000;
+    let ne: usize = 200000000;
     for _ in 0..nb {
         particle_system.rbmc();
  //       if i%10000 == 0 {println!("{}",i)}

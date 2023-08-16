@@ -4,26 +4,24 @@ use rand::Rng;
 use kiddo::KdTree;
 use kiddo::distance::squared_euclidean;
 use std::ops::{Add, Sub, AddAssign, SubAssign, Mul, Div, MulAssign, DivAssign};
-
-pub trait AsArrRef<const N:usize> {
-    fn as_aref(&self) -> &[f64; N];
-}
+use std::iter::Sum;
 
 pub trait Particle<const N:usize> {
-    type Point: AsArrRef<N> + PartialEq
+    type Point: AsRef<[f64; N]> + PartialEq
         + Add<Output = Self::Point>
         + Sub<Output = Self::Point>
         + AddAssign + SubAssign 
         + Mul<f64, Output = Self::Point>
         + Div<f64, Output = Self::Point>
-        + MulAssign<f64> + DivAssign<f64>;
+        + MulAssign<f64> + DivAssign<f64>
+        + Sum;
 
     const R_SPLIT: f64;
 
     fn norm(&self) -> f64;
 
     fn zero_point() -> Self::Point;
-    fn standard_normal(rng: &mut ThreadRng) -> Self::Point;
+    fn standard_normal<R: Rng>(rng: &mut R) -> Self::Point;
     fn standard_uni(rng: &mut ThreadRng) -> Self::Point;
 
     fn id (&self) -> usize;
@@ -52,21 +50,21 @@ struct ManybodyParam {
     c3:f64
 }
 
-pub struct Manybody<T: Particle<DIM>, const DIM:usize> {
+pub struct Manybody<T: Particle<DIM>, const DIM:usize, R: Rng> {
     num: usize,
     particles: Vec<T>,
-    kdtree: KdTree<f64, usize, DIM>,
-    rng: ThreadRng,
+    kdtree: KdTree<f64, DIM>,
+    rng: R,
     param: ManybodyParam,
 
     pub count: usize
 }
 
-impl<T: Particle<N> + Clone, const N:usize> Manybody<T, N> {
-    pub fn new(particles: Vec<T>, rng: ThreadRng, dt: f64, p: usize, m: usize, c1: f64, c2: f64, std: f64, c3: f64) -> Self {
+impl<T: Particle<N> + Clone, const N:usize, R: Rng> Manybody<T, N, R> {
+    pub fn new(particles: Vec<T>, rng: R, dt: f64, p: usize, m: usize, c1: f64, c2: f64, std: f64, c3: f64) -> Self {
         let mut kdtree = KdTree::new();
         for particle in particles.iter() {
-            kdtree.add(particle.point().as_aref(), particle.id()).unwrap();
+            kdtree.add(particle.point().as_ref(), particle.id());
         }
         let param = ManybodyParam {dt, p, m, c1, c2, std, c3};
 
@@ -85,16 +83,16 @@ impl<T: Particle<N> + Clone, const N:usize> Manybody<T, N> {
     }
 
     fn rbmc_step1(&mut self, xi: T) -> T {
-        let mut sum = T::zero_point();
         let range: Vec<usize> = (0..self.num-1).collect();
-        for xeta_rawindex in
-        range.choose_multiple(&mut self.rng, self.param.p-1) {
-            if *xeta_rawindex < xi.id() {
-                sum += xi.dw1(&self.particles[*xeta_rawindex]);
-            } else {
-                sum += xi.dw1(&self.particles[*xeta_rawindex+1]);
-            }
-        }
+        let sum: <T as Particle<N>>::Point = range
+            .choose_multiple(&mut self.rng, self.param.p-1)
+            .map(|&xeta_rawindex| {
+                if xeta_rawindex < xi.id() {
+                    xi.dw1(&self.particles[xeta_rawindex])
+                } else {
+                    xi.dw1(&self.particles[xeta_rawindex+1])
+                }
+            }).sum();
         T::new_position(&xi, 
             &(
                 xi.point() 
@@ -119,33 +117,30 @@ impl<T: Particle<N> + Clone, const N:usize> Manybody<T, N> {
 
         let mut sum = 0f64;
         let found = self.kdtree.within(
-            xstar.point().as_aref(),
+            xstar.point().as_ref(),
             T::R_SPLIT.powi(2),
             &squared_euclidean
-        ).unwrap();
-        for (_, &index) in found {
-            if index != i {
-                sum += xstar.w2(&self.particles[index]);
-            }
-        }
+        );
+        sum += found.iter().map(|neighbour| neighbour.item).filter(|&index| index != i).map(|index| xstar.w2(&self.particles[index])).sum::<f64>();
 
         let found = self.kdtree.within(
-            self.particles[i].point().as_aref(),
+            self.particles[i].point().as_ref(),
             T::R_SPLIT.powi(2),
             &squared_euclidean
-        ).unwrap();
-        for (_, &index) in found {
-            if index != i {
-                sum -= self.particles[i].w2(&self.particles[index]);
-            }
-        }
+        );
+        // for (_, &index) in found.into() {
+        //     if index != i {
+        //         sum -= self.particles[i].w2(&self.particles[index]);
+        //     }
+        // }
+        sum -= found.iter().map(|neighbour| neighbour.item).filter(|&index| index != i).map(|index| self.particles[i].w2(&self.particles[index])).sum::<f64>();
 
         let alpha = (-self.param.c3*sum).exp();
         let zeta = self.rng.gen_range(0.0..1.0);
         if zeta < alpha && xstar.available() {
-            self.kdtree.remove(&self.particles[i].point().as_aref(), &i).unwrap();
+            self.kdtree.remove(self.particles[i].point().as_ref(), i);
             self.particles[i]=xstar;
-            self.kdtree.add(self.particles[i].point().as_aref(), i).unwrap();
+            self.kdtree.add(self.particles[i].point().as_ref(), i);
             self.count += 1;
         }
         &self.particles[i]

@@ -1,8 +1,9 @@
 use nalgebra::SVector;
+use rand::Rng;
 use std::fmt::Display;
 use rand_distr::{StandardNormal, Uniform};
 
-use crate::manybody::{AsArrRef, Particle};
+use crate::manybody::Particle;
 
 const DIM: usize = 1;
 
@@ -18,12 +19,6 @@ pub struct DBParticle {
 impl PartialEq for DBParticle {
     fn eq(&self, other: &Self) -> bool { self.id == other.id }
     fn ne(&self, other: &Self) -> bool { self.id != other.id }
-}
-
-impl AsArrRef<1> for PointD {
-    fn as_aref(&self) -> &[f64; DIM] {
-        &self.data.0[0]
-    }
 }
 
 impl Display for DBParticle {
@@ -45,7 +40,7 @@ impl Particle<DIM> for DBParticle {
         VectorD::zeros()
     }
 
-    fn standard_normal(rng: &mut rand::rngs::ThreadRng) -> Self::Point {
+    fn standard_normal<R: Rng>(rng: &mut R) -> Self::Point {
         VectorD::from_distribution(&StandardNormal, rng)
     }
 

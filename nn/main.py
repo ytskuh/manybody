@@ -2,8 +2,9 @@
 import torch
 from torch import nn
 import matplotlib.pyplot as plt
+import numpy as np
 
-dev = "cuda"
+dev = "cpu"
 
 NEURON_NUM = 64
 TRAIN_DATA = 16
@@ -71,7 +72,7 @@ net_mean.output_layer.weight.data = torch.cat(output_layer_weight, dim=1)
 x_test = torch.linspace(0, 1, 25, device=dev).unsqueeze(1)
 y_pred = net_mean(x_test)
 plt.scatter(x_train.cpu()[0:300], y_train.cpu()[0:300], s=1)
-plt.plot(x_test.cpu(), y_pred.detach().cpu(), label='mean')
+plt.plot(x_test.cpu(), y_pred.detach().cpu(), label='mean', linestyle='dashed')
 plt.plot(x_test.cpu(), torch.sin(3*x_test.cpu()), label='real')
 
 i=98
@@ -81,8 +82,103 @@ net.hidden_layer.bias.data = hidden_layer_bias[i]
 net.output_layer.weight.data = output_layer_weight[i]
 x_test = torch.linspace(0, 1, 25, device=dev).unsqueeze(1)
 y_pred = net(x_test)
+plt.plot(x_test.cpu(), y_pred.detach().cpu(), label='sample', linestyle='dotted')
+plt.legend()
+plt.show()
+
+#%%
+x_test = torch.rand(1000, device=dev).unsqueeze(1)
+y_test = torch.sin(3*x_test)+torch.randn(1000, device=dev).unsqueeze(1)*0.2
+loss=[]
+for i in range(0,99):
+    net = nnm(NEURON_NUM)
+    net.hidden_layer.weight.data = hidden_layer_weight[i]
+    net.hidden_layer.bias.data = hidden_layer_bias[i]
+    net.output_layer.weight.data = output_layer_weight[i]
+    y_pred = net(x_test)
+    loss.append(criterion(y_test, y_pred).data.item())
+loss = np.array(loss)
+print(loss.mean())
+
+y_pred=net_mean(x_test)
+loss = criterion(y_test,y_pred).data.item()
+print(loss)
+
+x_test = x_train[0:2000]
+y_test = y_train[0:2000]
+loss=[]
+for i in range(0,99):
+    net = nnm(NEURON_NUM)
+    net.hidden_layer.weight.data = hidden_layer_weight[i]
+    net.hidden_layer.bias.data = hidden_layer_bias[i]
+    net.output_layer.weight.data = output_layer_weight[i]
+    y_pred = net(x_test)
+    loss.append(criterion(y_test, y_pred).data.item())
+loss = np.array(loss)
+print(loss.mean())
+
+y_pred=net_mean(x_test)
+loss = criterion(y_test,y_pred).data.item()
+print(loss)
+#%%
+i=50
+plt.scatter(x_train.cpu()[0:300], y_train.cpu()[0:300], s=1)
+net = nnm(NEURON_NUM)
+net.hidden_layer.weight.data = hidden_layer_weight[i]
+net.hidden_layer.bias.data = hidden_layer_bias[i]
+net.output_layer.weight.data = output_layer_weight[i]
+x_test = torch.linspace(0, 1, 25, device=dev).unsqueeze(1)
+y_pred = net(x_test)
 plt.plot(x_test.cpu(), y_pred.detach().cpu(), label='sample')
 plt.legend()
+plt.ylim(-0.25, 1.5)
+plt.show()
+
+i=80
+plt.scatter(x_train.cpu()[0:300], y_train.cpu()[0:300], s=1)
+net = nnm(NEURON_NUM)
+net.hidden_layer.weight.data = hidden_layer_weight[i]
+net.hidden_layer.bias.data = hidden_layer_bias[i]
+net.output_layer.weight.data = output_layer_weight[i]
+x_test = torch.linspace(0, 1, 25, device=dev).unsqueeze(1)
+y_pred = net(x_test)
+plt.plot(x_test.cpu(), y_pred.detach().cpu(), label='sample')
+plt.legend()
+plt.ylim(-0.25, 1.5)
+plt.show()
+
+i=30
+plt.scatter(x_train.cpu()[0:300], y_train.cpu()[0:300], s=1)
+net = nnm(NEURON_NUM)
+net.hidden_layer.weight.data = hidden_layer_weight[i]
+net.hidden_layer.bias.data = hidden_layer_bias[i]
+net.output_layer.weight.data = output_layer_weight[i]
+x_test = torch.linspace(0, 1, 25, device=dev).unsqueeze(1)
+y_pred = net(x_test)
+plt.plot(x_test.cpu(), y_pred.detach().cpu(), label='sample')
+plt.legend()
+plt.ylim(-0.25, 1.5)
+plt.show()
+
+i=10
+plt.scatter(x_train.cpu()[0:300], y_train.cpu()[0:300], s=1)
+net = nnm(NEURON_NUM)
+net.hidden_layer.weight.data = hidden_layer_weight[i]
+net.hidden_layer.bias.data = hidden_layer_bias[i]
+net.output_layer.weight.data = output_layer_weight[i]
+x_test = torch.linspace(0, 1, 25, device=dev).unsqueeze(1)
+y_pred = net(x_test)
+plt.plot(x_test.cpu(), y_pred.detach().cpu(), label='sample')
+plt.legend()
+plt.ylim(-0.25, 1.5)
+plt.show()
+
+#%%
+y_pred = net_mean(x_test)
+plt.scatter(x_train.cpu()[0:300], y_train.cpu()[0:300], s=1)
+plt.plot(x_test.cpu(), y_pred.detach().cpu(), label='mean')
+plt.legend()
+plt.ylim(-0.25, 1.5)
 plt.show()
 
 #%%
